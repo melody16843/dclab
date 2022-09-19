@@ -2,7 +2,8 @@ module Top (
     input        i_clk,
     input        i_rst_n,
     input        i_start,
-    output [3:0] o_random_out
+    output [3:0] o_random_out,
+    output [3:0] o_last_num
   );
 
   // ===== States =====
@@ -11,7 +12,7 @@ module Top (
 
   // ===== Output Buffers =====
   logic [3:0] o_random_out_r, o_random_out_w;
-
+  logic [3:0] o_last_num_r, o_last_num_w;
   // ===== Registers & Wires =====
   logic state_r, state_w;
   //logic feedback;
@@ -20,12 +21,14 @@ module Top (
 
   // ===== Output Assignments =====
   assign o_random_out = o_random_out_r;
+  assign o_last_num = o_last_num_r;
 
   // ===== Combinational Circuits =====
   always_comb
   begin
     // Default Values
     o_random_out_w = o_random_out_r;
+    o_last_num_w = o_last_num_r;
     state_w        = state_r;
     count_w = count_r;
     seed_w = seed_r;
@@ -37,6 +40,7 @@ module Top (
         begin
           state_w = S_PROC;
           count_w = count_r;
+          o_last_num_w = o_last_num_r;
           //o_random_out_w = 4'd15;
           o_random_out_w = seed_r;
           count_w = 27'd1;
@@ -45,6 +49,7 @@ module Top (
         begin
           state_w        = state_r;
           o_random_out_w = o_random_out_r;
+          o_last_num_w = o_last_num_r;
           count_w = count_r;
           seed_w = {(seed_r[3] ^ seed_r[0]), seed_r[3:1]};
         end
@@ -52,8 +57,9 @@ module Top (
 
       S_PROC:
       begin
-        state_w = (count_r[26:23] == 4'd15) ? S_IDLE : state_w;
+        state_w = (count_r[26:23] == 4'd15) ? S_IDLE : state_r;
         seed_w = {(seed_r[3] ^ seed_r[0]), seed_r[3:1]};
+        o_last_num_w = (count_r[26:23] == 4'd15) ? o_random_out_r : o_last_num_r;
         if(count_r[26:23] < 4'd15)
         begin
           //feedback=o_random_out_r[3]^o_random_out_r[0];
@@ -68,6 +74,7 @@ module Top (
             begin
               //o_random_out_w = {feedback,o_random_out_r[3:1]};
               o_random_out_w = {o_random_out_r[3]^o_random_out_r[0],o_random_out_r[3:1]};
+              
             end
             else
             begin
@@ -92,6 +99,7 @@ module Top (
     // reset
     if (!i_rst_n)
     begin
+      o_last_num_r <= 4'd0;
       o_random_out_r <= 4'd0;
       state_r        <= S_IDLE;
       count_r <= 27'd0;
@@ -99,6 +107,7 @@ module Top (
     end
     else
     begin
+      o_last_num_r <= o_last_num_w;
       o_random_out_r <= o_random_out_w;
       state_r        <= state_w;
       count_r <= count_w;
