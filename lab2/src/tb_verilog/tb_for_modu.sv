@@ -23,32 +23,21 @@ module tb;
 	);
 
 	initial begin
-		rst = 1;
-		#(2*CLK)
-		rst = 0;
-        for (int j = 0; j < 10; j++) begin
-            @(posedge clk);
-        end
-        $fread(encrypted_data, fp_e);
-        $display("=========");
-        $display("enc", i, encrypted_data);
-        $display("=========");
-        start_cal <= 1;
-        @(posedge clk)
-        encrypted_data <= 256'd10;
-        key <= 256'd2;
-        start_cal <= 0;
-        @(posedge fin)
-        $display("=========");
-        $display("dec ", i, decrypted_data);
-        $display("=========");
-		$finish;
-	end
+	$fsdbDumpfile("Lab1_test.fsdb");
+	$fsdbDumpvars(0, Top_test, "+all");
+end
 
-	initial begin
-		#(500000*CLK)
-		$display("Too slow, abort.");
-		$finish;
-	end
+initial begin	
+	i_clk 	= 0;
+	i_rst_n = 1;
+	i_start	= 0;
+	encrypted_data = 256'd10;
+	key = 256'd2;
+	@(posedge fin)
+	$display("result", i, decrypted_data);
+	
+end
+
+initial #(cycle*500000) $finish;
 
 endmodule
