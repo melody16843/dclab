@@ -8,9 +8,7 @@ module tb;
 	initial clk = 0;
 	always #HCLK clk = ~clk;
 	logic [255:0] encrypted_data, decrypted_data;
-    logic [255:0] key;
-	logic [247:0] golden;
-	integer fp_e, fp_d;
+    	logic [255:0] key;
 
 	ModuleProduct test(
 		.i_clk(clk),
@@ -18,23 +16,28 @@ module tb;
 		.i_start(start_cal),
 		.i_y(encrypted_data),
 		.i_n(key),
-		.o_a_pow_d(decrypted_data),
+		.mod_output(decrypted_data),
 		.o_finished(fin)
 	);
 
-	
 
-initial begin	
+
+initial begin
+	$fsdbDumpfile("mod_test.fsdb");
+	$fsdbDumpvars;	
 	clk 	= 0;
 	rst = 1;
-	start_cal = 0;
-	encrypted_data = 256'd10;
-	key = 256'd2;
-	@(posedge fin)
+	start_cal = 1;
+	encrypted_data = 256'd2;
+	key = 256'd10;
+	$display("start");
+	@(posedge clk) rst = 0;
+	@(posedge fin)begin
 	$display("result", decrypted_data);
-	
+	start_cal = 0;
+	end
 end
 
-initial #(500000*CLK) $finish;
+initial #(CLK*500000) $finish;
 
 endmodule

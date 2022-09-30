@@ -15,27 +15,36 @@ logic [255:0] output_w, output_r;
 logic finish_w, finish_r;
 
 assign mod_output = output_r;
+assign o_finished = finish_r;
 
 parameter S_IDLE = 1'd0;
 parameter S_PROC = 1'd1;
-parameter S_FINI = 2'd2
+parameter S_FINI = 2'd2;
 
 always_comb 
 begin
     //default value
     count_w = count_r;
     t_w = t_r;
-    state_w = seed_r;
+    state_w = state_r;
     output_w = output_r;
     finish_w = finish_r;
 
     //FSM
     case(state_r) 
     S_IDLE:begin
-        count_w = count_r;
-        state_w = seed_r;
-        output_w = output_r;
-        t_w = t_r
+        if(i_start)begin
+            count_w = count_r;
+            state_w = S_PROC;
+            output_w = output_r;
+            t_w = i_y;
+        end
+        else begin
+            count_w = count_r;
+            state_w = state_r;
+            output_w = output_r;
+            t_w = t_r;
+        end
     end
 
     S_PROC:begin
@@ -49,6 +58,7 @@ begin
                 state_w = state_r;
                 output_w = output_r;
             end
+            count_w = count_r +10'b1;
         end
         else begin
             state_w = state_r;
@@ -73,10 +83,10 @@ begin
 end
 
 
-always_ff @(posedge i_clk or negedge i_rst_n)
+always_ff @(posedge i_clk or posedge i_rst)
   begin
     // reset
-    if (!i_rst_n)
+    if (i_rst || finish_r)
     begin
       t_r <= 257'd0;
       output_r <= 257'd0;
