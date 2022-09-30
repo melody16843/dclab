@@ -35,6 +35,6 @@ initial begin
 	
 end
 
-initial #(cycle*500000) $finish;
+initial #(500000*CLK) $finish;
 
 endmodule
