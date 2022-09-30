@@ -9,7 +9,7 @@ module ModuleProduct(
 );
 
 logic [9:0] count_w, count_r;
-logic [256:0] t_w, t_r;
+logic [255:0] t_w, t_r;
 logic [1:0] state_r, state_w;
 logic [255:0] output_w, output_r;
 logic finish_w, finish_r;
@@ -39,8 +39,8 @@ begin
     end
 
     S_PROC:begin
-        if(count_r<)begin 
-            if (count_r == )begin
+        if(count_r<10'b100000001)begin 
+            if (count_r == 10'b100000000)begin
                 state_w = S_FINI;
                 if(output_w+t_r>i_n) output_w = output_r+t_r-i_n;
                 else output_w = output_r+t_r;
