@@ -22,19 +22,16 @@ module tb;
 		.o_finished(fin)
 	);
 
-	initial begin
-	$fsdbDumpfile("Lab1_test.fsdb");
-	$fsdbDumpvars(0, Top_test, "+all");
-end
+	
 
 initial begin	
-	i_clk 	= 0;
-	i_rst_n = 1;
-	i_start	= 0;
+	clk 	= 0;
+	rst = 1;
+	start_cal = 0;
 	encrypted_data = 256'd10;
 	key = 256'd2;
 	@(posedge fin)
-	$display("result", i, decrypted_data);
+	$display("result", decrypted_data);
 	
 end
 
