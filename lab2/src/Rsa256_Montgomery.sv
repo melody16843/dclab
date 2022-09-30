@@ -4,10 +4,10 @@ module MontgemoryAlgorithm(
 	input  [255:0] i_N,
 	input  [255:0] i_a,
 	input  [255:0] i_b,
-	output [255:0] o_m	
+	output [257:0] o_m	
 );
 
-	logic  [255:0] o_m_r, o_m_w;
+	logic  [257:0] o_m_r, o_m_w;
 	logic  [15:0]  count_r, count_w;
 
 	assign o_m = o_m_r;
@@ -18,7 +18,7 @@ module MontgemoryAlgorithm(
 		o_m_w = o_m_r;
 		count_w = count_r;
 
-		if(count_r < 16'd4)
+		if(count_r < 16'd256)
 		begin
 			//count_w = count_r + 1;
 			if(i_a[count_r] == 1'b1)
@@ -59,7 +59,7 @@ module MontgemoryAlgorithm(
 		if(!i_rst)
 		begin
 			count_r <= 16'd0;
-			o_m_r <= 256'd0;
+			o_m_r <= 258'd0;
 		end
 
 		else
