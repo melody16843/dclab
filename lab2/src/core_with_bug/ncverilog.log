@@ -1,0 +1,34 @@
+ncverilog: 15.20-s084: (c) Copyright 1995-2020 Cadence Design Systems, Inc.
+TOOL:	ncverilog	15.20-s084: Started on Oct 03, 2022 at 21:38:46 CST
+ncverilog
+	+access+r
+	tb.sv
+	Rsa256Core.sv
+	ModuloProduct.sv
+	MontgemoryAlgorithm.sv
+Loading snapshot worklib.tb:sv .................... Done
+ncsim: *W,DSEM2009: This SystemVerilog design is simulated as per IEEE 1800-2009 SystemVerilog simulation semantics. Use -disable_sem2009 option for turning off SV 2009 simulation semantics.
+*Verdi* Loading libsscore_ius152.so
+ncsim> source /usr/cad/cadence/INCISIV/cur/tools/inca/files/ncsimrc
+ncsim> run
+FSDB Dumper for IUS, Release Verdi_P-2019.06, Linux, 05/26/2019
+(C) 1996 - 2019 by Synopsys, Inc.
+*Verdi* FSDB WARNING: The FSDB file already exists. Overwriting the FSDB file may crash the programs that are using this file.
+*Verdi* : Create FSDB file 'lab2.fsdb'
+*Verdi* : Begin traversing the scopes, layer (0).
+*Verdi* : End of traversing.
+=========
+enc   0 = c6b662ecb173c53cc7bb4212057f9c0ba283e000b98c9dcf5feaee7d6c933dfb
+=========
+=========
+dec   0 = 0000000000000000000000000000000000000000000000000000000000000000
+gold  0 = 005468652076616c7565206f662050492069733a0a332e313431353932363533
+=========
+=========
+enc   1 = 9d29a982563bf87a5814dfc70059a3772cf98a11099f093a2e95d5a874836dd8
+=========
+Too slow, abort.
+Simulation complete via $finish(1) at time 5 MS + 0
+./tb.sv:63     $finish;
+ncsim> exit
+TOOL:	ncverilog	15.20-s084: Exiting on Oct 03, 2022 at 21:38:51 CST  (total: 00:00:05)
