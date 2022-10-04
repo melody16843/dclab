@@ -147,10 +147,12 @@ always_comb begin
         if(!rsa_finished)begin
             rsa_start_w = 1'd1;
             state_w = state_r;
+            dec_w = rsa_dec;
         end
         else begin
             rsa_start_w = 1'd0;
             state_w = S_SEND_WAIT;
+            dec_w = dec_r;
         end
     end
     S_SEND_WAIT:begin
@@ -169,7 +171,7 @@ always_comb begin
     end
     S_SEND_DATA:begin
     if(bytes_counter_r<7'd32)begin
-            dec_w = {(dec_r << 8), (rsa_dec<<8)[255:248]};
+            dec_w = (dec_r >> 8);
             bytes_counter_w = bytes_counter_r +7'd1;
             state_w = state_r;
         end
