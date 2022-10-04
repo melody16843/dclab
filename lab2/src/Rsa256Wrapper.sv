@@ -38,6 +38,7 @@ logic [6:0] data_trans_w, data_trans_r;
 localparam GET_N = 2'd0;
 localparam GET_D = 2'd1;
 localparam GET_ENC = 2'd2;
+localparam READY_CAL = 2'd3;
 
 assign avm_address = avm_address_r;
 assign avm_read = avm_read_r;
