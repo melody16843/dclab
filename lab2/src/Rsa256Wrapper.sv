@@ -75,19 +75,27 @@ task StartWrite;
 endtask
 
 always_comb begin
+    //default value
     case(state_r)
     S_GET_KEY:begin
-        if(avm_readdata[7] == 1'b1) begin
+        if (!avm_waitrequest) begin
+            if(avm_readdata[7] == 1'b1) begin
+                avm_address_w = RX_BASE;
+                state_w = S_GET_DATA;
+            end
+            else begin
+                avm_address_w = STATUS_BASE;
+                state_w = S_GET_KEY;
+            end
             avm_read_w = 1;
             avm_write_w = 0;
-            avm_address_w = RX_BASE;
-            state_w = S_GET_DATA;
         end
         else begin
-            avm_read_w = avm_read_r;
-            avm_write_w = avm_write_r;
-            avm_address_w = avm_address_r;
+            avm_read_w = 1;
+            avm_write_w = 0;
+            avm_address_w = STATUS_BASE;
             state_w = S_GET_KEY;
+
         end
     end
     S_GET_DATA:begin
@@ -99,13 +107,17 @@ always_comb begin
                 n_w = {(n_r << 8), avm_readdata[7:0]};
                 state_count_w = state_count_r;
                 bytes_counter_w = bytes_counter_r +7'd1;
-                state_w = state_r;
+                state_w = S_GET_KEY;
+                avm_address_w = avm_address_r;
+
             end
             else begin
                 n_w = n_r;
                 state_count_w = GET_D;
                 bytes_counter_w = 7'd0;
-                state_w = state_r;
+                state_w = S_GET_KEY;
+                avm_address_w = STATUS_BASE;
+
             end
         end
         GET_D:begin
@@ -113,13 +125,17 @@ always_comb begin
                 d_w = {(d_r << 8), avm_readdata[7:0]};
                 state_count_w = state_count_r;
                 bytes_counter_w = bytes_counter_r +7'd1;
-                state_w = state_r;
+                state_w = S_GET_KEY;
+                avm_address_w = avm_address_r;
+
             end
             else begin
                 d_w = d_r;
                 state_count_w = GET_ENC;
                 bytes_counter_w = 7'd0;
-                state_w = state_r;
+                state_w = S_GET_KEY;
+                avm_address_w = STATUS_BASE;
+
             end
         end
         GET_ENC:begin
@@ -127,19 +143,25 @@ always_comb begin
                 enc_w = {(enc_r << 8), avm_readdata[7:0]};
                 state_count_w = state_count_r;
                 bytes_counter_w = bytes_counter_r +7'd1;
-                state_w = state_r;
+                state_w = S_GET_KEY;
+                avm_address_w = avm_address_r;
+
             end
             else begin
                 enc_w = enc_r;
                 state_count_w = READY_CAL;
                 bytes_counter_w = 7'd0;
-                state_w = state_r;
+                state_w = S_GET_KEY;
+                avm_address_w = STATUS_BASE;
+
             end
         end
         READY_CAL:begin
             state_w = GET_N;
             bytes_counter_w = 7'd0;
             state_w = S_WAIT_CALCULATE;
+            avm_address_w = STATUS_BASE;
+
         end
         endcase
     end
@@ -157,17 +179,15 @@ always_comb begin
     end
     S_SEND_WAIT:begin
         if(avm_readdata[7] == 1'b1) begin
-            avm_read_w = 1;
-            avm_write_w = 0;
             avm_address_w = TX_BASE;
             state_w = S_SEND_DATA;
         end
         else begin
-            avm_read_w = avm_read_r;
-            avm_write_w = avm_write_r;
             avm_address_w = avm_address_r;
             state_w = state_r;
         end
+        avm_read_w = 0;
+        avm_write_w = 1;
     end
     S_SEND_DATA:begin
     if(bytes_counter_r<7'd32)begin
@@ -200,7 +220,7 @@ always_ff @(posedge avm_clk or posedge avm_rst) begin
         rsa_start_r <= 0;
 
         // data_recieved_r <= 4'd0;
-        // state_count_r <= 2'd0;
+        state_count_r <= 2'd0;
         // data_trans_r <= 4'd0;
 
     end else begin
@@ -216,7 +236,7 @@ always_ff @(posedge avm_clk or posedge avm_rst) begin
         rsa_start_r <= rsa_start_w;
 
         // data_recieved_r <= data_recieved_w;
-        // state_count_r <= state_count_w;
+        state_count_r <= state_count_w;
         // data_trans_r <=data_trans_w;
     end
 end
