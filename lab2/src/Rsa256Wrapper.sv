@@ -25,6 +25,7 @@ localparam S_SEND_DATA = 4;
 logic [255:0] n_r, n_w, d_r, d_w, enc_r, enc_w, dec_r, dec_w;
 logic [1:0] state_r, state_w;
 logic [4:0] avm_address_r, avm_address_w;
+logic [6:0] bytes_counter_r, bytes_counter_w;
 logic avm_read_r, avm_read_w, avm_write_r, avm_write_w;
 
 logic rsa_start_r, rsa_start_w;
@@ -88,6 +89,7 @@ always_comb begin
             avm_address_w = avm_address_r;
             state_w = S_GET_KEY;
         end
+    end
     S_GET_DATA:begin
         //read data to rignt place
         // decide got to nxt ot not 
@@ -141,7 +143,7 @@ always_comb begin
         end
         endcase
     end
-    S_WAIT_CALCULATE:
+    S_WAIT_CALCULATE:begin
         if(!rsa_finished)begin
             rsa_start_w = 1'd1;
             state_w = state_r;
