@@ -34,7 +34,7 @@ logic [255:0] rsa_dec;
 
 logic [2:0] state_count_w, state_count_r;
 logic [6:0] data_recived_w, data_recived_r;
-logic [6:0] data_trans_w, data_trans_r;
+logic [9:0] data_trans_w, data_trans_r;
 
 localparam GET_N = 2'd0;
 localparam GET_D = 2'd1;
@@ -169,16 +169,14 @@ always_comb begin
     end
     S_SEND_DATA:begin
     if(bytes_counter_r<7'd32)begin
-            dec_w = {(dec_r << 8), rsa_dec[(255 - (bytes_counter_r)*8): (255 - (bytes_counter_r)*8 - 7)]};
-            state_count_w = state_count_r;
+            dec_w = {(dec_r << 8), (rsa_dec<<8)[255:248]};
             bytes_counter_w = bytes_counter_r +7'd1;
             state_w = state_r;
         end
         else begin
-            enc_w = enc_r;
-            state_count_w = READY_CAL;
+            dec_w = dec_r;
             bytes_counter_w = 7'd0;
-            state_w = state_r;
+            state_w = S_GET_KEY;
         end
     end
 
