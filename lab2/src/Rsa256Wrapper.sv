@@ -108,7 +108,7 @@ always_comb begin
                 state_count_w = state_count_r;
                 bytes_counter_w = bytes_counter_r +7'd1;
                 state_w = S_GET_KEY;
-                avm_address_w = avm_address_r;
+                avm_address_w = STATUS_BASE;
 
             end
             else begin
@@ -126,7 +126,7 @@ always_comb begin
                 state_count_w = state_count_r;
                 bytes_counter_w = bytes_counter_r +7'd1;
                 state_w = S_GET_KEY;
-                avm_address_w = avm_address_r;
+                avm_address_w = STATUS_BASE;
 
             end
             else begin
@@ -144,7 +144,7 @@ always_comb begin
                 state_count_w = state_count_r;
                 bytes_counter_w = bytes_counter_r +7'd1;
                 state_w = S_GET_KEY;
-                avm_address_w = avm_address_r;
+                avm_address_w = STATUS_BASE;
 
             end
             else begin
