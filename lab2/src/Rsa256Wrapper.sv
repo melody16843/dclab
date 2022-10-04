@@ -114,7 +114,7 @@ always_comb begin
                 state_w = state_r;
             end
             else begin
-                d_w = d_r
+                d_w = d_r;
                 state_count_w = GET_ENC;
                 data_recieved_w = 7'd0;
                 state_w = state_r;
