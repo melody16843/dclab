@@ -89,6 +89,7 @@ always_comb begin
     //FSM
     case(state_r)
     S_GET_KEY:begin
+        //dectect whether rx is ready(avn_waitrequest ==0 && avm_readdata[7] ==1)
         if (!avm_waitrequest) begin
             if(avm_readdata[7] == 1'b1) begin
                 avm_address_w = RX_BASE;
@@ -111,7 +112,8 @@ always_comb begin
     end
     S_GET_DATA:begin
         //read data to rignt place
-        // decide got to nxt ot not 
+        // n d enc each has 256bit. since readdata only provide 8 bit, we need to load 32 times.
+        // decide go to next or not
         case(state_count_r)
         GET_N:begin
             if(bytes_counter_r<7'd32)begin
@@ -177,6 +179,7 @@ always_comb begin
         endcase
     end
     S_WAIT_CALCULATE:begin
+        //do calculate
         if(!rsa_finished)begin
             rsa_start_w = 1'd1;
             state_w = state_r;
@@ -189,28 +192,32 @@ always_comb begin
         end
     end
     S_SEND_WAIT:begin
-        if(avm_readdata[7] == 1'b1) begin
-            avm_address_w = TX_BASE;
-            state_w = S_SEND_DATA;
+        //detect whether tx is ready(avm_waitrequest == 0 && amv_readdata[7] = 1)
+        if (!avm_waitrequest) begin
+            if(avm_readdata[7] == 1'b1) begin
+                avm_address_w = TX_BASE;
+                state_w = S_SEND_DATA;
+            end
+            else begin
+                avm_address_w = avm_address_r;
+                state_w = state_r;
+            end
+            avm_read_w = 0;
+            avm_write_w = 1;
         end
-        else begin
-            avm_address_w = avm_address_r;
-            state_w = state_r;
-        end
-        avm_read_w = 0;
-        avm_write_w = 1;
     end
     S_SEND_DATA:begin
-    if(bytes_counter_r<7'd32)begin
-            dec_w = (dec_r >> 8);
-            bytes_counter_w = bytes_counter_r +7'd1;
-            state_w = state_r;
-        end
-        else begin
-            dec_w = dec_r;
-            bytes_counter_w = 7'd0;
-            state_w = S_GET_KEY;
-        end
+        //data move to right place
+        if(bytes_counter_r<7'd32)begin
+                dec_w = (dec_r >> 8);
+                bytes_counter_w = bytes_counter_r +7'd1;
+                state_w = state_r;
+            end
+            else begin
+                dec_w = dec_r;
+                bytes_counter_w = 7'd0;
+                state_w = S_GET_KEY;
+            end
     end
 
 
