@@ -95,50 +95,50 @@ always_comb begin
         // decide got to nxt ot not 
         case(state_count_r)
         GET_N:begin
-            if(data_recieved_r<7'd32)begin
+            if(bytes_counter_r<7'd32)begin
                 n_w = {(n_r << 8), avm_readdata[7:0]};
                 state_count_w = state_count_r;
-                data_recieved_w = data_recieved_r +7'd1;
+                bytes_counter_w = bytes_counter_r +7'd1;
                 state_w = state_r;
             end
             else begin
                 n_w = n_r;
                 state_count_w = GET_D;
-                data_recieved_w = 7'd0;
+                bytes_counter_w = 7'd0;
                 state_w = state_r;
             end
         end
         GET_D:begin
-            if(data_recieved_r<7'd32)begin
+            if(bytes_counter_r<7'd32)begin
                 d_w = {(d_r << 8), avm_readdata[7:0]};
                 state_count_w = state_count_r;
-                data_recieved_w = data_recieved_r +7'd1;
+                bytes_counter_w = bytes_counter_r +7'd1;
                 state_w = state_r;
             end
             else begin
                 d_w = d_r;
                 state_count_w = GET_ENC;
-                data_recieved_w = 7'd0;
+                bytes_counter_w = 7'd0;
                 state_w = state_r;
             end
         end
         GET_ENC:begin
-            if(data_recieved_r<7'd32)begin
+            if(bytes_counter_r<7'd32)begin
                 enc_w = {(enc_r << 8), avm_readdata[7:0]};
                 state_count_w = state_count_r;
-                data_recieved_w = data_recieved_r +7'd1;
+                bytes_counter_w = bytes_counter_r +7'd1;
                 state_w = state_r;
             end
             else begin
                 enc_w = enc_r;
                 state_count_w = READY_CAL;
-                data_recieved_w = 7'd0;
+                bytes_counter_w = 7'd0;
                 state_w = state_r;
             end
         end
         READY_CAL:begin
             state_w = GET_N;
-            data_recieved_w = 7'd0;
+            bytes_counter_w = 7'd0;
             state_w = S_WAIT_CALCULATE;
         end
         endcase
@@ -168,16 +168,16 @@ always_comb begin
         end
     end
     S_SEND_DATA:begin
-    if(data_trans_r<7'd32)begin
+    if(bytes_counter_r<7'd32)begin
             dec_w = {(dec_r << 8), rsa_dec[(255 - (bytes_counter_r)*8): (255 - (bytes_counter_r)*8 - 7)]};
             state_count_w = state_count_r;
-            data_trans_w = data_trans_r +7'd1;
+            bytes_counter_w = bytes_counter_r +7'd1;
             state_w = state_r;
         end
         else begin
             enc_w = enc_r;
             state_count_w = READY_CAL;
-            data_trans_w = 7'd0;
+            bytes_counter_w = 7'd0;
             state_w = state_r;
         end
     end
@@ -196,12 +196,12 @@ always_ff @(posedge avm_clk or posedge avm_rst) begin
         avm_read_r <= 1;
         avm_write_r <= 0;
         state_r <= S_GET_KEY;
-        bytes_counter_r <= 63;
+        bytes_counter_r <= 0;
         rsa_start_r <= 0;
 
-        data_recieved_r <= 4'd0;
-        state_count_r <= 2'd0;
-        data_trans_r <= 4'd0;
+        // data_recieved_r <= 4'd0;
+        // state_count_r <= 2'd0;
+        // data_trans_r <= 4'd0;
 
     end else begin
         n_r <= n_w;
@@ -215,9 +215,9 @@ always_ff @(posedge avm_clk or posedge avm_rst) begin
         bytes_counter_r <= bytes_counter_w;
         rsa_start_r <= rsa_start_w;
 
-        data_recieved_r <= data_recieved_w;
-        state_count_r <= state_count_w;
-        data_trans_r <=data_trans_w;
+        // data_recieved_r <= data_recieved_w;
+        // state_count_r <= state_count_w;
+        // data_trans_r <=data_trans_w;
     end
 end
 
