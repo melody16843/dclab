@@ -33,8 +33,6 @@ logic rsa_finished;
 logic [255:0] rsa_dec;
 
 logic [2:0] state_count_w, state_count_r;
-logic [6:0] data_recived_w, data_recived_r;
-logic [9:0] data_trans_w, data_trans_r;
 
 localparam GET_N = 2'd0;
 localparam GET_D = 2'd1;
@@ -76,6 +74,19 @@ endtask
 
 always_comb begin
     //default value
+    state_count_w = state_count_r;
+    state_w = state_r;
+    avm_address_w = avm_address_r;
+    n_w = n_r;
+    d_w = d_r;
+    enc_w = enc_r;
+    dec_w = dec_r;
+    bytes_counter_w = bytes_counter_r;
+    avm_read_w = avm_read_r;
+    avm_write_w = avm_write_r;
+    rsa_start_w = rsa_start_r;
+
+    //FSM
     case(state_r)
     S_GET_KEY:begin
         if (!avm_waitrequest) begin
@@ -220,7 +231,7 @@ always_ff @(posedge avm_clk or posedge avm_rst) begin
         rsa_start_r <= 0;
 
         // data_recieved_r <= 4'd0;
-        state_count_r <= 2'd0;
+        state_count_r <= GET_N;
         // data_trans_r <= 4'd0;
 
     end else begin
