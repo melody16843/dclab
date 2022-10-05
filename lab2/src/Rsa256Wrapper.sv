@@ -172,7 +172,7 @@ always_comb begin
                     enc_w[7:0] = avm_readdata[7:0];
                     state_count_w = READY_CAL;
                     bytes_counter_w = 7'd0;
-                    state_w = S_GET_KEY;
+                    state_w = S_GET_DATA;
                     StartRead(STATUS_BASE);
 
                 end
