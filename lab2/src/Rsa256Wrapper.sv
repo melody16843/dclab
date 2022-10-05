@@ -186,11 +186,6 @@ always_comb begin
             rsa_start_w = 1'd0;
             state_w = S_SEND_WAIT;
             dec_w = rsa_dec;
-            $display("%h", d_r);
-            $display("%h", n_r);
-            $display("%h", enc_r);
-            $display("cal finish");
-            $display("%h", rsa_dec);
         end
     end
     S_SEND_WAIT:begin
@@ -217,14 +212,12 @@ always_comb begin
         //data move to right place
         if (!avm_waitrequest) begin
             if(avm_address_r == TX_BASE & bytes_counter_r<7'd30)begin
-                $display("%h", dec_r[247-:8]);
                 dec_w = dec_r << 8;
                 bytes_counter_w = bytes_counter_r +7'd1;
                 state_w = S_SEND_WAIT;
                 StartRead(STATUS_BASE);
             end
             else if (avm_address_r == TX_BASE & bytes_counter_r == 7'd30) begin
-                $display("%h", dec_r[247-:8]);
                 dec_w = dec_r << 8;
                 bytes_counter_w = 7'd0;
                 state_w = S_GET_KEY;
