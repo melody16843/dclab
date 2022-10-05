@@ -37,7 +37,6 @@ logic [2:0] state_count_w, state_count_r;
 localparam GET_N = 2'd0;
 localparam GET_D = 2'd1;
 localparam GET_ENC = 2'd2;
-localparam READY_CAL = 2'd3;
 
 assign avm_address = avm_address_r;
 assign avm_read = avm_read_r;
@@ -161,7 +160,7 @@ always_comb begin
                 if(bytes_counter_r<7'd31)begin
                     enc_w = enc_w << 8;
                     enc_w[7:0] = avm_readdata[7:0];
-                    state_count_w = state_count_r;
+                    state_count_w = GET_ENC;
                     bytes_counter_w = bytes_counter_r +7'd1;
                     state_w = S_GET_KEY;
                     StartRead(STATUS_BASE);
@@ -170,22 +169,13 @@ always_comb begin
                 else begin
                     enc_w = enc_w << 8;
                     enc_w[7:0] = avm_readdata[7:0];
-                    state_count_w = READY_CAL;
+                    state_count_w = GET_ENC;
                     bytes_counter_w = 7'd0;
-                    state_w = S_GET_DATA;
+                    state_w = S_WAIT_CALCULATE;
                     StartRead(STATUS_BASE);
 
                 end
             end
-        end
-        READY_CAL:begin
-            if (!avm_waitrequest) begin
-                state_count_w = GET_ENC;
-                bytes_counter_w = 7'd0;
-                state_w = S_WAIT_CALCULATE;
-                StartRead(STATUS_BASE);
-            end
-
         end
         endcase
     end
@@ -226,13 +216,15 @@ always_comb begin
     S_SEND_DATA:begin
         //data move to right place
         if (!avm_waitrequest) begin
-            if(avm_address_r == TX_BASE & bytes_counter_r<7'd31)begin
+            if(avm_address_r == TX_BASE & bytes_counter_r<7'd30)begin
+                $display("%h", dec_r[247-:8]);
                 dec_w = dec_r << 8;
                 bytes_counter_w = bytes_counter_r +7'd1;
                 state_w = S_SEND_WAIT;
                 StartRead(STATUS_BASE);
             end
-            else if (avm_address_r == TX_BASE & bytes_counter_r == 7'd31) begin
+            else if (avm_address_r == TX_BASE & bytes_counter_r == 7'd30) begin
+                $display("%h", dec_r[247-:8]);
                 dec_w = dec_r << 8;
                 bytes_counter_w = 7'd0;
                 state_w = S_GET_KEY;
