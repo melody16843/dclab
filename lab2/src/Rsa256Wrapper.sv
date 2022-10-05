@@ -23,7 +23,7 @@ localparam S_SEND_WAIT = 3;
 localparam S_SEND_DATA = 4;
 
 logic [255:0] n_r, n_w, d_r, d_w, enc_r, enc_w, dec_r, dec_w;
-logic [1:0] state_r, state_w;
+logic [2:0] state_r, state_w;
 logic [4:0] avm_address_r, avm_address_w;
 logic [6:0] bytes_counter_r, bytes_counter_w;
 logic avm_read_r, avm_read_w, avm_write_r, avm_write_w;
@@ -114,19 +114,18 @@ always_comb begin
         case(state_count_r)
         GET_N:begin
             if (!avm_waitrequest) begin
-                if(avm_address_r == RX_BASE & bytes_counter_r<7'd32)begin
-                    // $display("N");
+                if(avm_address_r == RX_BASE & bytes_counter_r<7'd31)begin
                     n_w = n_w << 8;
                     n_w[7:0] = avm_readdata[7:0];
                     state_count_w = state_count_r;
                     bytes_counter_w = bytes_counter_r +7'd1;
                     state_w = S_GET_KEY;
                     StartRead(STATUS_BASE);
-                    // $display("yes");
 
                 end
-                else if(avm_address_r == RX_BASE & bytes_counter_r == 7'd32) begin
-                    n_w = n_r;
+                else if(avm_address_r == RX_BASE & bytes_counter_r == 7'd31) begin
+                    n_w = n_w << 8;
+                    n_w[7:0] = avm_readdata[7:0];
                     state_count_w = GET_D;
                     bytes_counter_w = 7'd0;
                     state_w = S_GET_KEY;
@@ -137,8 +136,7 @@ always_comb begin
         end
         GET_D:begin
             if (!avm_waitrequest) begin
-                if(bytes_counter_r<7'd32)begin
-                    // $display("D");
+                if(bytes_counter_r<7'd31)begin
                     d_w = d_w << 8;
                     d_w[7:0] = avm_readdata[7:0];
                     state_count_w = state_count_r;
@@ -148,7 +146,8 @@ always_comb begin
 
                 end
                 else begin
-                    d_w = d_r;
+                    d_w = d_w << 8;
+                    d_w[7:0] = avm_readdata[7:0];
                     state_count_w = GET_ENC;
                     bytes_counter_w = 7'd0;
                     state_w = S_GET_KEY;
@@ -159,9 +158,9 @@ always_comb begin
         end
         GET_ENC:begin
             if (!avm_waitrequest) begin
-                if(bytes_counter_r<7'd32)begin
-                    // $display("ENC");
-                    enc_w = {(enc_r << 8), avm_readdata[7:0]};
+                if(bytes_counter_r<7'd31)begin
+                    enc_w = enc_w << 8;
+                    enc_w[7:0] = avm_readdata[7:0];
                     state_count_w = state_count_r;
                     bytes_counter_w = bytes_counter_r +7'd1;
                     state_w = S_GET_KEY;
@@ -169,7 +168,8 @@ always_comb begin
 
                 end
                 else begin
-                    enc_w = enc_r;
+                    enc_w = enc_w << 8;
+                    enc_w[7:0] = avm_readdata[7:0];
                     state_count_w = READY_CAL;
                     bytes_counter_w = 7'd0;
                     state_w = S_GET_KEY;
@@ -179,13 +179,8 @@ always_comb begin
             end
         end
         READY_CAL:begin
-            // $display("ready");
-            // $display(n_r);
-            // $display(d_r);
-            // $display(enc_r);
-            // $display(state_r);
             if (!avm_waitrequest) begin
-                state_count_w = GET_N;
+                state_count_w = GET_ENC;
                 bytes_counter_w = 7'd0;
                 state_w = S_WAIT_CALCULATE;
                 StartRead(STATUS_BASE);
@@ -201,16 +196,18 @@ always_comb begin
             rsa_start_w = 1'd0;
             state_w = S_SEND_WAIT;
             dec_w = rsa_dec;
+            $display("%h", d_r);
+            $display("%h", n_r);
+            $display("%h", enc_r);
             $display("cal finish");
-            $display(rsa_dec);
-            StartRead(STATUS_BASE);
+            $display("%h", rsa_dec);
         end
     end
     S_SEND_WAIT:begin
         //detect whether tx is ready(avm_waitrequest == 0 && amv_readdata[6] = 1)
         if (!avm_waitrequest) begin
             if(avm_address_r == STATUS_BASE & avm_readdata[TX_OK_BIT] == 1'b1) begin
-                $display("dec");
+                // $display("dec");
                 StartWrite(TX_BASE);
                 state_w = S_SEND_DATA;
             end
@@ -229,19 +226,18 @@ always_comb begin
     S_SEND_DATA:begin
         //data move to right place
         if (!avm_waitrequest) begin
-            if(avm_address_r == TX_BASE & bytes_counter_r<7'd32)begin
-                // $display("dec");
-                $display(bytes_counter_r);
-                dec_w = (dec_r << 8);
+            if(avm_address_r == TX_BASE & bytes_counter_r<7'd31)begin
+                dec_w = dec_r << 8;
                 bytes_counter_w = bytes_counter_r +7'd1;
                 state_w = S_SEND_WAIT;
+                StartRead(STATUS_BASE);
             end
-            else begin
-                dec_w = dec_r;
+            else if (avm_address_r == TX_BASE & bytes_counter_r == 7'd31) begin
+                dec_w = dec_r << 8;
                 bytes_counter_w = 7'd0;
                 state_w = S_GET_KEY;
+                StartRead(STATUS_BASE);
             end
-            StartRead(STATUS_BASE);
         end
     end
 
@@ -277,7 +273,7 @@ always_ff @(posedge avm_clk or posedge avm_rst) begin
         state_r <= state_w;
         bytes_counter_r <= bytes_counter_w;
         rsa_start_r <= rsa_start_w;
-
+        // $display(state_r);
         // data_recieved_r <= data_recieved_w;
         state_count_r <= state_count_w;
         // data_trans_r <=data_trans_w;
