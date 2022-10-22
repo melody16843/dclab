@@ -4,25 +4,26 @@ module tb;
 	localparam CLK = 10;
 	localparam HCLK = CLK/2;
 
-	logic clk, start, finished, rst_n, ic2_sclk, i2c_sdat, i2c_oen;
+	logic bclk, en, rst_n, daclrck;
+    logic [15:0] dac_data;
+    logic [15:0] aud_dacdat;
     
 	initial clk = 0;
 	always #HCLK clk = ~clk;
 
-	I2cInitializer test(
+	AudPlayer test(
 	.i_rst_n(rst_n),
-	.i_clk(clk),
-	.i_start(start),
-	.o_finished(finished),
-	.o_sclk(ic2_sclk),
-	.o_sdat(i2c_sdat),
-	.o_oen(i2c_oen) // you are outputing (you are not outputing only when you are "ack"ing.)
+	.i_bclk(bclk),
+	.i_daclrck(daclrck),
+	.i_en(en), // enable AudPlayer only when playing audio, work with AudDSP
+	.i_dac_data(dac_data), //dac_data
+	.o_aud_dacdat(aud_dacdat)
 );
 
 
 
 initial begin
-	$fsdbDumpfile("ic2_test.fsdb");
+	$fsdbDumpfile("player_test.fsdb");
 	$fsdbDumpvars;	
 	
 end
