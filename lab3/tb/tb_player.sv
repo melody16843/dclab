@@ -8,8 +8,8 @@ module tb;
     logic [15:0] dac_data;
     logic [15:0] aud_dacdat;
     
-	initial clk = 0;
-	always #HCLK clk = ~clk;
+	initial bclk = 0;
+	always #HCLK bclk = ~bclk;
 
 	AudPlayer test(
 	.i_rst_n(rst_n),

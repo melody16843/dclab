@@ -9,8 +9,8 @@ module tb;
     logic [15:0] data_record;
     logic [19:0] addr_record;
     
-	initial clk = 0;
-	always #HCLK clk = ~clk;
+	initial bclk = 0;
+	always #HCLK bclk = ~bclk;
 
 	AudRecorder test(
 	.i_rst_n(rst_n), 
