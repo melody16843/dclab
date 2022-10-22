@@ -103,7 +103,6 @@ module Rsa256Core (
       end
       S_MONT:
       begin
-        //
         start_mont_w = 0;
         if(o_Mont_m_finish)
         begin
@@ -123,7 +122,7 @@ module Rsa256Core (
         begin
           state_w= S_MONT ;
           start_mont_w = 1 ;
-          if(i_d[count_r])
+          if(i_d[count_r] == 1'b1)
             Mont_t_a_w=o_m_r;
           Mont_m_a_w=t_r;
         end
@@ -177,11 +176,13 @@ module ModuloProduct (
     input   i_rst,
     input   i_start,
     input   [255:0] i_y,
-    input   [255:0] i_n,  // length of bits is 255 = 2^8 -> need a 8-bit count
+    input   [255:0] i_n,
     output  [255:0] mod_output,
     output  o_finished
   );
 
+  parameter S_IDLE = 1'd0;
+  parameter S_PROC = 1'd1;
   logic state_r, state_w;
   logic finish_w, finish_r;
   logic [257:0] output_w, output_r;
@@ -200,7 +201,7 @@ module ModuloProduct (
     finish_w = finish_r ;
 
     case(state_r)
-      0 :
+      S_IDLE :
       begin
         if(i_start)
         begin
@@ -212,13 +213,12 @@ module ModuloProduct (
         end
       end
 
-      1:
+      S_PROC:
       begin
         if(t_r+t_r > i_n)
           t_w = t_r + t_r - i_n ;
         else
           t_w = t_r + t_r ;
-        // count == 256 final round is done
         if(count_r == 10'd256)
         begin
           if(output_r+t_r >= i_n)
@@ -234,15 +234,6 @@ module ModuloProduct (
         end
         count_w = count_r + 1 ;
 
-      end
-
-      default
-      begin
-        state_w = 0 ;
-        output_w = 0 ;
-        t_w  = 0 ;
-        count_w = 0 ;
-        finish_w = 0 ;
       end
     endcase
   end
@@ -274,13 +265,15 @@ module MontgemoryAlgorithm (
     input   i_clk,
     input   i_start,
     input   i_rst,
-    input   [255:0] i_N,  // length of bits is 256 = 2^8 -> need a 8-bit count
+    input   [255:0] i_N,
     input   [255:0] i_a,
     input   [255:0] i_b,
     output  [255:0] o_m,
     output  o_finished
   );
 
+  parameter S_IDLE = 1'd0;
+  parameter S_PROC = 1'd1;
   logic state_w, state_r;
   logic finish_w, finish_r;
   logic [257:0] o_m_w, o_m_r;
@@ -302,7 +295,7 @@ module MontgemoryAlgorithm (
     tmp2 = o_m_r ;
 
     case(state_r)
-      0 :
+      S_IDLE :
       begin
         o_m_w = 0 ;
         count_w = 0 ;
@@ -315,7 +308,7 @@ module MontgemoryAlgorithm (
         end
       end
 
-      1:
+      S_PROC:
       begin
         if(i_a[count_r] == 1'b1)
         begin
@@ -328,12 +321,10 @@ module MontgemoryAlgorithm (
           o_m_w =(o_m_r + ((o_m_r[0])? i_N:0))>>1 ;
         end
         tmp2 = tmp1 >> 1 ;
-        //o_m_w = tmp2 ;
-        // count == 255 final round is done
-        // if(&count_r)
+
         if(count_r == 16'd255)
         begin
-          o_m_w = tmp2 - (tmp2>=i_N? i_N : 0) ;
+          o_m_w = tmp2 - (tmp2 >= i_N? i_N : 0) ;
           /*
           if(o_m_r >= i_N)
           begin
@@ -347,16 +338,6 @@ module MontgemoryAlgorithm (
         end
         else
           count_w = count_r + 1 ;
-      end
-
-      default
-      begin
-        state_w = 0 ;
-        o_m_w = 0 ;
-        count_w = 0 ;
-        finish_w = 0 ;
-        tmp1 = 0 ;
-        tmp2 = 0 ;
       end
     endcase
   end
