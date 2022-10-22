@@ -12,7 +12,7 @@ module tb;
 	initial clk = 0;
 	always #HCLK clk = ~clk;
 
-	AudRecorder recorder0(
+	AudRecorder test(
 	.i_rst_n(rst_n), 
 	.i_clk(bclk),
 	.i_lrc(adclrck),

@@ -9,7 +9,7 @@ module tb;
 	initial clk = 0;
 	always #HCLK clk = ~clk;
 
-	I2cInitializer init0(
+	I2cInitializer test(
 	.i_rst_n(i_rst_n),
 	.i_clk(clk),
 	.i_start(start),
