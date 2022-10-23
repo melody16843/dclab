@@ -32,6 +32,14 @@ module tb;
 initial begin
 	$fsdbDumpfile("dsp_test.fsdb");
 	$fsdbDumpvars;	
+	rst_n = 0;
+	#(2*CLK)
+	rst_n = 1;
+	daclrck = 1;
+	@(posedge clk)
+	start = 1;
+	data_play = 15'd11;
+	
 	
 end
 
