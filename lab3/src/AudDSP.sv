@@ -51,7 +51,7 @@ always_comb begin
             interval_t = 0;
             addr_count_t = 0;
         end
-        else if begin
+        else begin
             interval_t = 7-speed_r; //set interval according to speed
             if(addr_count_r == interval_r || addr_count_r > interval_r)begin
                 sram_addr_t = sram_addr_r +1;
