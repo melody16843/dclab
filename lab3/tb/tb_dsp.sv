@@ -30,15 +30,105 @@ module tb;
 
 
 initial begin
-	$fsdbDumpfile("dsp_test.fsdb");
+	$fsdbDumpfile("./dsp_output/dsp_test.fsdb");
 	$fsdbDumpvars;	
 	rst_n = 0;
 	#(2*CLK)
 	rst_n = 1;
+	pause = 0;
 	daclrck = 1;
 	@(posedge clk)
 	start = 1;
 	data_play = 15'd11;
+	@(posedge clk)//wait 3 clk
+	start = 0;
+	@(posedge clk)
+	fast = 1;
+	@(posedge clk)
+	fast = 0;
+	@(posedge clk)
+	daclrck = 0;
+	// if(addr_play==1) data_play = 15'd12;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 1;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 0;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 1;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 0;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 1;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 0;
+	pause = 1;
+	@(posedge clk)
+	pause = 0;
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 1;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 0;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 1;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 0;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 1;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 0;
+	start = 1;
+	@(posedge clk)
+	start = 0;
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 1;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 0;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 1;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 0;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 1;
+	@(posedge clk)
+	@(posedge clk)
+	@(posedge clk)
+	daclrck = 0;
+	
+
+	$finish;
+
 	
 	
 end

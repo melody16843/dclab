@@ -18,69 +18,105 @@ module AudDSP(
 
 logic [15:0] dac_t, dac_r;
 
-logic [2:0] addr_count_t, addr_count_r;     
+logic [2:0] addr_count_t, addr_count_r;     //for intepolation 0 repeat time     
 logic [19:0] sram_addr_t, sram_addr_r;
 logic [2:0] interval_t, interval_r;
 
-logic start_fill_t, start_fill_r;   //filling or not
-
 logic [4:0] speed_t, speed_r;   //current speed 
+
+logic [2:0] state_t, state_r;
 
 assign o_sram_addr = sram_addr_r;
 assign o_dac_data = dac_r;
 
+parameter S_IDLE = 3'd0;
+parameter S_FILL = 3'd1;
+parameter S_COMP = 3'd2;
+parameter S_PAUSE = 3'd3;
 
 
 
 always_comb begin
     //default 
-
+    dac_t = dac_r;
+    addr_count_t = addr_count_r;
+    sram_addr_t = sram_addr_r;
+    interval_t = interval_r;
+    speed_t = speed_r;
+    state_t = state_r;
     //FSM
     //filling part
-	if(i_daclrck & start_fill_r) begin     //dsp try to fill dac data at daclrck==1
+    case(state_r)
+    S_IDLE : if(i_start) state_t = S_FILL;
+    S_FILL : begin
         //filling
-        dac_t = i_sram_data;
-
-
-        //deal with pause and nxt addr
-        if(i_pause)begin
-            sram_addr_t = sram_addr_r;
-        end
-        else if (speed_r > 6) begin
-            sram_addr_t = sram_addr_r +speed_r - 6;
-            interval_t = 0;
-            addr_count_t = 0;
-        end
-        else begin
-            interval_t = 7-speed_r; //set interval according to speed
-            if(addr_count_r == interval_r || addr_count_r > interval_r)begin
-                sram_addr_t = sram_addr_r +1;
+        if(i_stop)begin
+                sram_addr_t = 0;
+                speed_t = 5'd7; //normal speed
+                state_t = S_IDLE;
                 addr_count_t = 0;
+        end
+        else if(i_pause)begin
+                sram_addr_t = sram_addr_r;
+                state_t = S_PAUSE;
+        end
+        else if(i_daclrck) begin
+            dac_t = i_sram_data;
+
+            //deal with pause and nxt addr
+            if(i_pause)begin
+                sram_addr_t = sram_addr_r;
+                state_t = S_PAUSE;
+            end
+            else if (speed_r > 6) begin
+                sram_addr_t = sram_addr_r +speed_r - 5'd6;
+                interval_t = 0;
+                addr_count_t = 0;
+                state_t = S_COMP;
             end
             else begin
-                sram_addr_t = sram_addr_r;
-                addr_count_t = addr_count_r + 1; 
+                interval_t = 5'd7-speed_r; //set interval according to speed
+                state_t = S_COMP;
+                if(addr_count_r == interval_r || addr_count_r > interval_r)begin
+                    sram_addr_t = sram_addr_r +1;
+                    addr_count_t = 0;
+                end
+                else begin
+                    sram_addr_t = sram_addr_r;
+                    addr_count_t = addr_count_r + 1; 
+                end
+
+                
             end
-
             
-        end
-        
 
-        //deal with stop
+            //deal with stop
+            if(i_stop)begin
+                sram_addr_t = 0;
+                speed_t = 5'd7; //normal speed
+                state_t = S_IDLE;
+                addr_count_t = 0;
+            end
+        end
+        else    state_t = state_r;
+    end
+	S_COMP  : begin
         if(i_stop)begin
-            sram_addr_t = 0;
-            speed_t = 5'd6;
+                sram_addr_t = 0;
+                speed_t = 5'd7; //normal speed
+                state_t = S_IDLE;
+                addr_count_t = 0;
         end
+        else if(i_pause)begin
+                sram_addr_t = sram_addr_r;
+                state_t = S_PAUSE;
+        end
+        else if(!i_daclrck)  state_t = S_FILL;
+    end
+    S_PAUSE :   if(i_start) state_t = S_FILL;
+    default :  state_t = S_IDLE;
+    endcase
 
-    end
-    else if(i_daclrck & !start_fill_r & i_start) begin
-        dac_t = dac_r;
-        start_fill_t = 1;   //wait 1 cycle
-    end
-    else begin  //dac filling completed
-        dac_t = dac_r;
-        start_fill_t = 0;   
-    end
 
     //speed part
     if(i_fast & speed_r < 5'd14) speed_t = speed_r + 1;
@@ -96,8 +132,8 @@ always_ff @(posedge i_clk) begin
         addr_count_r <= 0;
         sram_addr_r <= 0;
         interval_r <= 0;
-        start_fill_r <= 0;
-        speed_r <= 5'd6;
+        state_r <= S_IDLE;
+        speed_r <= 5'd7;
 
     end
     else begin
@@ -105,7 +141,7 @@ always_ff @(posedge i_clk) begin
         addr_count_r <= addr_count_t;
         sram_addr_r <= sram_addr_t;
         interval_r <=  interval_t;
-        start_fill_r <= start_fill_t;
+        state_r <= state_t;
         speed_r <= speed_t;
     end
 end
