@@ -9,7 +9,9 @@ module tb;
     logic [15:0] aud_dacdat;
     
 	initial bclk = 0;
+	initial daclrck = 0;
 	always #HCLK bclk = ~bclk;
+	always #CLK = daclrck;
 
 	AudPlayer test(
 	.i_rst_n(rst_n),
@@ -25,6 +27,15 @@ module tb;
 initial begin
 	$fsdbDumpfile("player_test.fsdb");
 	$fsdbDumpvars;	
+	rst_n = 0;
+	#(2*CLK)
+	rst_n = 1;
+	@(posedge bclk)
+	en = 1;
+	@(posedge bclk)
+	@(posedge bclk)
+	dac_data = 16'd100;
+
 	
 end
 

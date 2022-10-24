@@ -10,7 +10,9 @@ module tb;
     logic [19:0] addr_play;
 
 	initial clk = 0;
+	initial daclrck = 0;
 	always #HCLK clk = ~clk;
+	always #CLK = daclrck;
 
 	AudDSP test(
 	.i_rst_n(rst_n),
@@ -47,84 +49,22 @@ initial begin
 	@(posedge clk)
 	fast = 0;
 	@(posedge clk)
-	daclrck = 0;
-	// if(addr_play==1) data_play = 15'd12;
+	if(addr_play==1) data_play = 15'd12;
+	for (int i=0;i<17;i++)begin
+		@(posedge clk)
+	end
 	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 1;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 0;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 1;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 0;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 1;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 0;
 	pause = 1;
 	@(posedge clk)
 	pause = 0;
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 1;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 0;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 1;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 0;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 1;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 0;
+
+	for (int i=0;i<17;i++)begin
+		@(posedge clk)
+	end
 	start = 1;
 	@(posedge clk)
 	start = 0;
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 1;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 0;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 1;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 0;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 1;
-	@(posedge clk)
-	@(posedge clk)
-	@(posedge clk)
-	daclrck = 0;
+	
 	
 
 	$finish;
