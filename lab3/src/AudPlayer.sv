@@ -14,6 +14,12 @@ parameter	S_IDLE = 2'd0;
 parameter	S_WAIT = 2'd1;
 
 always_comb begin
+	//default
+	count_t = count_r;
+	dac_data_t = dac_data_r;
+	state_t = state_r;
+
+	//FSM
 	case(state_r)
 	S_IDLE: if(en & i_dac_data)	state_t = S_PLAY; 
 	S_WAIT:	if(!i_daclrck)begin	//wait one cycle
