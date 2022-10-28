@@ -35,6 +35,7 @@ begin
     begin
         if(i_start)
         begin
+            /// i_start has to be 1 during recording ///
             if(!i_lrc) 
             begin
                 state_w = S_READ;
