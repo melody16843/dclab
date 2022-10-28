@@ -29,6 +29,7 @@ module I2cInitializer (
   logic [23:0] data_r, data_w;
   logic [3:0] count_r, count_w;
   logic finished_r, finished_w;
+  logic [1:0] state_r, state_w;
 
   //Acknowledge input
   logic ack_start_r, ack_start_w;
@@ -103,11 +104,11 @@ module I2cInitializer (
   end
 
 
-  always_ff @(posedge i_clk or posedge i_rst_n)
+  always_ff @(posedge i_clk or negedge i_rst_n)
   begin
-    if(i_rst_n)
+    if(!i_rst_n)
     begin
-      state_r <= IDLE;
+      state_r <= S_IDLE;
       count_r <= 0;
       data_r <= 0;
       ack_start_r <= 0;
@@ -243,9 +244,9 @@ module Acknowledge (
     endcase
   end
 
-  always_ff @(posedge i_clk or posedge i_rst_n)
+  always_ff @(posedge i_clk or negedge i_rst_n)
   begin
-    if(i_rst_n)
+    if(!i_rst_n)
     begin
       state_r <= S_IDLE;
       i_data_r <= 24'b0011_0100_000_1111_0_0000_0000; // reset;
