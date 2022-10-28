@@ -35,16 +35,24 @@ begin
     begin
         if(i_start)
         begin
-            /// i_start has to be 1 during recording ///
-            if(!i_lrc) 
+            if(i_stop)
             begin
-                state_w = S_READ;
+                state_w = S_IDLE;
                 counter_w = 8'd0;
+                o_data_w = 16'd0;
             end
-            else 
+            else
             begin
-                state_w = S_WAIT;
-                counter_w = counter_r;
+                if(!i_lrc) 
+                begin
+                    state_w = S_READ;
+                    counter_w = 8'd0;
+                end
+                else 
+                begin
+                    state_w = S_WAIT;
+                    counter_w = counter_r;
+                end
             end
         end
         else 
