@@ -7,9 +7,10 @@ module AudPlayer(
 	output o_aud_dacdat
 );
 logic dac_data_t, dac_data_r;
-logic count_t, count_r;
+logic [4:0] count_t, count_r;
 
 logic [1:0] state_t, state_r;
+
 parameter	S_IDLE = 2'd0;
 parameter	S_WAIT = 2'd1;
 
@@ -30,8 +31,8 @@ always_comb begin
 		if(!en)	state_t = S_IDLE;
 		else if(!i_daclrck)begin
 			if (count_r<4'd15) begin
-			dac_data_t = i_dac_data[count_r];
-			count_t = count_r +1;
+				dac_data_t = i_dac_data[count_r];
+				count_t = count_r +1;
 			end
 			else begin
 				dac_data_t = i_dac_data[count_r];
@@ -45,7 +46,7 @@ end
 always_ff @(posedge i_bclk)begin
 	if(!i_rst_n)begin
 		dac_data_r <= 0;
-		count_r <= 0;
+		count_r <= 5'd0;
 		state_r <= S_IDLE;
 	end
 	else begin

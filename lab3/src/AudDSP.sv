@@ -61,7 +61,6 @@ always_comb begin
                 state_t = S_PAUSE;
         end
         else if(i_daclrck) begin
-            dac_t = i_sram_data;
 
             //deal with pause and nxt addr
             if(i_pause)begin
@@ -69,6 +68,7 @@ always_comb begin
                 state_t = S_PAUSE;
             end
             else if (speed_r > 6) begin
+                dac_t = i_sram_data;
                 sram_addr_t = sram_addr_r +speed_r - 5'd6;
                 interval_t = 0;
                 addr_count_t = 0;
@@ -85,6 +85,12 @@ always_comb begin
                     sram_addr_t = sram_addr_r;
                     addr_count_t = addr_count_r + 1; 
                 end
+
+                //slower 0
+                dac_t = i_sram_data;
+
+                //slower 1
+                // dac_t = (i_sram_data + dac_r) <<1;
 
                 
             end
