@@ -12,6 +12,8 @@ module AudRecorder(
 
 parameter   S_IDLE = 0;
 parameter   S_READ = 1;
+parameter   S_WAIT = 2;
+
 
 
 logic           state_r, state_w;
@@ -31,41 +33,83 @@ begin
     case(state_r)
     S_IDLE:
     begin
-        if (!i_lrc)
+        if(i_start)
         begin
-            state_w = S_READ;
-            counter_w = 8'd0;
+            if(!i_lrc) 
+            begin
+                state_w = S_READ;
+                counter_w = 8'd0;
+            end
+            else 
+            begin
+                state_w = S_WAIT;
+                counter_w = counter_r;
+            end
         end
-        else
+        else 
         begin
             state_w = state_r;
             counter_w = counter_r;
         end
-
     end
 
     S_READ:
     begin
-        if (i_lrc)
+        if(i_stop)
         begin
             state_w = S_IDLE;
-            counter_w = counter_r;
-            o_data_w = o_data_r;
+            counter_w = 8'd0;
+            o_data_w = 16'd0;
         end
         else
         begin
-            state_w = state_r;
-            counter_w = counter_r + 8'b1;
-            if (counter_r >= 8'd0 && counter_r < 8'd16)
+            if (i_lrc)
             begin
-                o_data_w = {o_data_r[14:0], i_data};
+                state_w = S_IDLE;
+                counter_w = counter_r;
+                o_data_w = o_data_r;
             end
             else
             begin
-                o_data_w = o_data_r;
+                counter_w = counter_r + 8'b1;
+                if (counter_r >= 8'd0 && counter_r < 8'd16)
+                begin
+                    o_data_w = {o_data_r[14:0], i_data};
+                end
+                else
+                begin
+                    o_data_w = o_data_r;
+                end
             end
         end
     end
+
+    S_WAIT:
+    begin
+        if(i_stop)
+        begin
+            state_w = S_IDLE;
+            counter_w = 8'd0;
+            o_data_w = 16'd0;
+        end
+        else
+        begin
+            if (!i_lrc)
+            begin
+                state_w = S_READ;
+                counter_w = 8'd0;
+            end
+            else
+            begin
+                state_w = state_r;
+                counter_w = counter_r;
+            end
+        end
+    end
+
+
+
+    default: state_w = S_IDLE;
     endcase
 
 end
