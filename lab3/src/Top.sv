@@ -46,12 +46,12 @@ module Top (
 );
 
 // design the FSM and states as you like
-parameter S_IDLE       = 0;
-parameter S_I2C        = 1;
-parameter S_RECD       = 2;
-parameter S_RECD_PAUSE = 3;
-parameter S_PLAY       = 4;
-parameter S_PLAY_PAUSE = 5;
+// parameter S_IDLE       = 0;
+// parameter S_I2C        = 1;
+// parameter S_RECD       = 2;
+// parameter S_RECD_PAUSE = 3;
+// parameter S_PLAY       = 4;
+// parameter S_PLAY_PAUSE = 5;
 
 logic i2c_oen, i2c_sdat;
 logic [19:0] addr_record, addr_play;
@@ -90,7 +90,11 @@ logic player_stop;
 
 
 parameter S_INIT = 3'd0;
-parameter S_READY = 3'd2;
+parameter S_READY = 3'd1;
+parameter S_RECORD = 3'd2;
+parameter S_PLAY = 3'd3;
+parameter S_PLAY_PAUSE = 3'd4;
+
 
 
 // === I2cInitializer ===
