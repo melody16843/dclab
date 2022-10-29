@@ -84,7 +84,6 @@ logic recorder_pause;
 
 //player var
 logic player_start;
-logic player_pause;
 logic player_stop;
 logic player_fast;
 logic player_slow;
@@ -150,7 +149,7 @@ AudRecorder recorder0(
 	.i_clk(i_AUD_BCLK),
 	.i_lrc(i_AUD_ADCLRCK),
 	.i_start(recorder_start),
-	.i_pause(recorder_pause),
+	.i_pause(recorder_stop),
 	.i_stop(recorder_stop),
 	.i_data(i_AUD_ADCDAT),
 	.o_address(addr_record),
@@ -188,7 +187,7 @@ always_comb begin
 		if (i_key_0 && key_0_up) begin //recorder pause
 			state_t = S_READY;
 			recorder_start = 0;
-			recorder_pause = 1;
+			recorder_stop = 1;
 			key_0_up = 0;
 		end
 		

@@ -13,7 +13,9 @@ module AudDSP(
 	input i_daclrck,
 	input [15:0] i_sram_data,
 	output [15:0] o_dac_data,
-	output [19:0] o_sram_addr
+	output [19:0] o_sram_addr,
+
+    input final_address
 );
 
 logic [15:0] dac_t, dac_r;
@@ -107,7 +109,7 @@ always_comb begin
         else    state_t = state_r;
     end
 	S_COMP  : begin
-        if(i_stop)begin
+        if(i_stop || sram_addr_t>final_address)begin
                 sram_addr_t = 0;
                 speed_t = 5'd7; //normal speed
                 state_t = S_IDLE;
