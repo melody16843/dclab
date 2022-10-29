@@ -86,6 +86,11 @@ logic recorder_pause;
 logic player_start;
 logic player_pause;
 logic player_stop;
+logic player_fast;
+logic player_slow;
+
+//key up 
+logic key_0_up, key_1_up, key_2_up;
 
 
 
@@ -118,8 +123,8 @@ AudDSP dsp0(
 	.i_start(player_start),
 	.i_pause(player_pause),
 	.i_stop(player_stop),
-	.i_fast(),
-	.i_slow_0(), // constant interpolation
+	.i_fast(player_fast),
+	.i_slow_0(player_slow), // constant interpolation
 	.i_slow_1(), // linear interpolation
 	.i_daclrck(i_AUD_DACLRCK),
 	.i_sram_data(data_play),
@@ -155,7 +160,9 @@ AudRecorder recorder0(
 always_comb begin
 	// design your control here
 	//default
-	state_t = state_r
+	state_t = state_r;
+	player_fast_t = player_fast_r;
+	player_slow_t = player_slow_r;
 
 	//FSM
 	case(state_r)
@@ -163,59 +170,95 @@ always_comb begin
 	S_READY:begin 
 		recorder_stop = 0;
 		player_stop = 0;
-		if (i_key_0) begin //recorder start
+		if(!i_key_0) key_0_up = 1;
+		if(!i_key_1) key_1_up = 1;
+		if (i_key_0 && key_0_up) begin //recorder start
 			state_t = S_RECORD;
 			recorder_start = 1;
+			key_0_up = 0
 		end
-		if (i_key_1) begin
+		else if (i_key_1 && key_1_up) begin
 			state_t = S_PLAY;
 			player_start = 1;
+			key_1_up = 0
 		end
 	end
 	S_RECORD:begin
-		if (i_key_0) begin //recorder pause
+		if (!i_key_0) key_0_up = 1;
+		if (i_key_0 && key_0_up) begin //recorder pause
 			state_t = S_READY;
 			recorder_start = 0;
 			recorder_pause = 1;
+			key_0_up = 0;
 		end
 		
 	end
 	S_PLAY: begin
-		if (i_key_1) begin //player pause
+		if(!key_1_up) key_1_up = 1;
+		if(!key_0_up) key_0_up = 1;
+		if(!key_2_up) key_2_up = 1;
+		if (i_key_1 && key_1_up) begin //player pause
 			state_t = S_PLAY_PAUSE;
 			player_start = 0;
 			player_pause = 1;
-			player_stop = 0;
+			key_1_up = 0;
 		end
-		else if (i_key_2) begin //player stop
-			state_t = S_READY;
-			player_start = 0;
+		else if (i_key_0 && key_0_up) begin //player faster
+			state_t = S_PLAY_FAST;
+			player_fast_t = 1;
+			key_0_up = 0;
+			
+		end
+		else if (i_key_2 && key_2_up) begin
+			state_t = S_PLAY_SLOW;
+			player_slow_t = 1;
+			key_2_up = 0;
+		end
+		else begin
+			state_t = state_r;
+			player_fast_t = 0;
+			player_slow_t = 0;
+			player_start = 1;
 			player_pause = 0;
-			player_stop = 1;
 		end
 	end
+	
 	S_PLAY_PAUSE:begin
-		if (i_key_1) begin //player start again
+		if(!key_1_up) key_1_up = 1;
+		if(!key_2_up) key_2_up = 1;
+
+		if (i_key_1 && key_1_up) begin //player start again
 			state_t = S_PLAY;
 			player_start = 1;
 			player_pause = 0;
 			player_stop = 0;
 		end
-		if else (i_key_2) begin //player stop
+		if else (i_key_2 && key_2_up) begin //player stop
 			state_t = S_READY;
 			player_start = 0;
 			recorder_pause = 0;
 			player_stop = 1;
 		end
 	end
+	endcase
 end
 
 always_ff @(posedge i_AUD_BCLK or posedge i_rst_n) begin
 	if (!i_rst_n) begin
-		
+		state_r <= S_INIT;
+		init_finished = 0;
+		recorder_start = 0;
+		recorder_pause = 0;
+		player_start = 0;
+		player_pause = 0;
+		player_stop = 0;
+		player_fast_r <= 0;
+		player_slow_r <= 0;
 	end
 	else begin
-		
+		state_r <= S_INIT;
+		player_fast_r <= player_fast_t;
+		player_slow_r <= player_slow_t;
 	end
 end
 
