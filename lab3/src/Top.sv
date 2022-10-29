@@ -232,13 +232,13 @@ always_comb begin
 			key_1_up = 0;
 		end
 		else if (i_key_0 && key_0_up) begin //player faster
-			state_t = S_PLAY_FAST;
+			state_t = S_PLAY;
 			player_fast_t = 1;
 			key_0_up = 0;
 			
 		end
 		else if (i_key_2 && key_2_up) begin
-			state_t = S_PLAY_SLOW;
+			state_t = S_PLAY;
 			player_slow_t = 1;
 			key_2_up = 0;
 		end

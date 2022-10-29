@@ -15,7 +15,7 @@ module AudDSP(
 	output [15:0] o_dac_data,
 	output [19:0] o_sram_addr,
 
-    input final_address
+    input i_final_address
 );
 
 logic [15:0] dac_t, dac_r;

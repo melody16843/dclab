@@ -66,13 +66,33 @@ initial begin
 	$fsdbDumpvars;	
 
 	rst_n = 0;
-	#(2*CLK)
+	#(5*CLK)
 	rst_n = 1;
 	@(posedge bclk)
-	en = 1;
 	@(posedge bclk)
 	@(posedge bclk)
-	dac_data = 16'd100;
+	key0down = 1;
+    @(posedge bclk)
+	@(posedge bclk)
+	@(posedge bclk)
+    @(posedge bclk)
+	@(posedge bclk)
+	@(posedge bclk)
+    key0down = 0;
+    @(posedge bclk)
+	@(posedge bclk)
+	@(posedge bclk)
+    @(posedge bclk)
+	@(posedge bclk)
+	@(posedge bclk)
+    key0down = 1;
+    @(posedge bclk)
+	@(posedge bclk)
+	@(posedge bclk)
+    @(posedge bclk)
+	@(posedge bclk)
+	@(posedge bclk)
+    key0down = 0;
 
 	
 end
