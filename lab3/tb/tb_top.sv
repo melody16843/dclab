@@ -1,82 +1,184 @@
-`timescale 1ns/100ps
+`timescale 1us/1us
 
-module tb;
-	localparam CLK = 10;
-	localparam HCLK = CLK/2;
-    localparam tCLK = CLK*50;
+module Top_Test;
 
-	logic rst_n
-    logic key0down, key1down, key2down;
-    logic [19:0] SRAM_ADDR;
-    logic [15:0] SRAM_DQ;
-    logic SRAM_WE_N, SRAM_CE_N, SRAM_OE_N, SRAM_LB_N, SRAM_UB_N;
-    logic I2C_SCLK, I2C_SDAT;
-    logic AUD_ADCDAT, AUD_ADCLRCK, AUD_BCLK, AUD_DACLRCK, AUD_DACDAT;
+parameter cycle = 100.0;
 
-    
-	initial bclk = 0;
-	initial daclrck = 0;
-	always #HCLK bclk = ~bclk;
-	always #tCLK = daclrck;
+logic   i_rst_n;
+logic   i_clk;
+logic   i_key_0;
+logic   i_key_1;
+logic   i_key_2;
 
-    //for clk gen
-    logic CLK_12M, CLK_100K, CLK_800K;
-    Altpll pll0( // generate with qsys, please follow lab2 tutorials
-	.clk_clk(CLK),
-	.reset_reset_n(rst_n),
-	.altpll_12m_clk(CLK_12M),
-	.altpll_100k_clk(CLK_100K),
-	.altpll_800k_clk(CLK_800K)
+logic   [19:0]  o_SRAM_ADDR;
+wire    [15:0]  io_SRAM_DQ;
+logic           o_SRAM_WE_N;
+logic           o_SRAM_CE_N;
+logic           o_SRAM_OE_N;
+logic           o_SRAM_LB_N;
+logic           o_SRAM_UB_N;
+
+logic   i_clk_100k;
+logic   o_I2C_SCLK;
+wire    io_I2C_SDAT;
+
+wire    i_AUD_ADCDAT;
+wire    i_AUD_ADCLRCK;
+wire    i_AUD_BCLK;
+wire    i_AUD_DACLRCK;
+logic   o_AUD_DACDAT;
+
+initial i_clk = 0;
+initial i_clk_100k = 0;
+
+always #(cycle/2.0) i_clk = ~i_clk;
+always #(cycle/5.0) i_clk_100k = ~i_clk_100k;
+
+Top top0(
+    .i_rst_n(i_rst_n),
+    .i_clk(i_clk),
+    .i_key_0(i_key_0),
+    .i_key_1(i_key_1),
+    .i_key_2(i_key_2),
+    .o_SRAM_ADDR(o_SRAM_ADDR),
+    .io_SRAM_DQ(io_SRAM_DQ),
+    .o_SRAM_WE_N(o_SRAM_WE_N),
+    .o_SRAM_CE_N(o_SRAM_CE_N),
+    .o_SRAM_OE_N(o_SRAM_OE_N),
+    .o_SRAM_LB_N(o_SRAM_LB_N),
+    .o_SRAM_UB_N(o_SRAM_UB_N),
+    .i_clk_100k(i_clk_100k),
+    .o_I2C_SCLK(o_I2C_SCLK),
+    .io_I2C_SDAT(io_I2C_SDAT),
+    .i_AUD_ADCDAT(i_AUD_ADCDAT),
+    .i_AUD_ADCLRCK(i_AUD_ADCLRCK),
+    .i_AUD_BCLK(i_AUD_BCLK),
+    .i_AUD_DACLRCK(i_AUD_DACLRCK),
+    .o_AUD_DACDAT(o_AUD_DACDAT)
 );
-
-	Top test(
-	.i_rst_n(rst_n),
-	.i_clk(CLK_12M),
-	.i_key_0(key0down),
-	.i_key_1(key1down),
-	.i_key_2(key2down),
-	// .i_speed(SW[3:0]), // design how user can decide mode on your own
-	
-	// AudDSP and SRAM
-	.o_SRAM_ADDR(SRAM_ADDR), // [19:0]
-	.io_SRAM_DQ(SRAM_DQ), // [15:0]
-	.o_SRAM_WE_N(SRAM_WE_N),
-	.o_SRAM_CE_N(SRAM_CE_N),
-	.o_SRAM_OE_N(SRAM_OE_N),
-	.o_SRAM_LB_N(SRAM_LB_N),
-	.o_SRAM_UB_N(SRAM_UB_N),
-	
-	// I2C
-	.i_clk_100k(CLK_100K),
-	.o_I2C_SCLK(I2C_SCLK),
-	.io_I2C_SDAT(I2C_SDAT),
-	
-	// AudPlayer
-	.i_AUD_ADCDAT(AUD_ADCDAT),
-	.i_AUD_ADCLRCK(AUD_ADCLRCK),
-	.i_AUD_BCLK(AUD_BCLK),
-	.i_AUD_DACLRCK(AUD_DACLRCK),
-	.o_AUD_DACDAT(AUD_DACDAT)
-);
-
-
 
 initial begin
-	$fsdbDumpfile("top_test.fsdb");
-	$fsdbDumpvars;	
-
-	rst_n = 0;
-	#(2*CLK)
-	rst_n = 1;
-	@(posedge bclk)
-	en = 1;
-	@(posedge bclk)
-	@(posedge bclk)
-	dac_data = 16'd100;
-
-	
+    $fsdbDumpfile("Top.fsdb");
+	$fsdbDumpvars(0, Top_Test, "+all");
 end
 
-initial #(CLK*500000) $finish;
+initial begin
+    i_clk = 0;
+    i_rst_n = 1;
+    i_key_0 = 0;
+    i_key_1 = 0;
+    i_key_2 = 0;
+    
+
+
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk) i_rst_n = 0;
+	@(negedge i_clk) i_rst_n = 1; 
+
+    for(int i = 0; i < 345; i++) begin
+        @(negedge i_clk);
+    end
+    
+    @(negedge i_clk) i_key_0 = 1;   // start recording
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk) i_key_0 = 0;
+
+    for(int i = 0; i < 295; i++) begin
+        @(negedge i_clk);
+    end
+    
+    @(negedge i_clk) i_key_0 = 1;  // stop recording
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk) i_key_0 = 0;
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk) i_key_1 = 1;  // start play
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk) i_key_1 = 0;
+
+    for(int i = 0; i < 100; i++) begin
+        @(negedge i_clk);
+    end
+    
+    @(negedge i_clk) i_key_1 = 1;  // playing pause
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk) i_key_1 = 0;
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk) i_key_1 = 1;  // continue playing
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk) i_key_1 = 0;
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+    @(negedge i_clk);
+
+
+
+end
+
+initial #(cycle*10000) $finish;
 
 endmodule
