@@ -13,6 +13,7 @@ logic [1:0] state_t, state_r;
 
 parameter	S_IDLE = 2'd0;
 parameter	S_WAIT = 2'd1;
+parameter   S_PLAY = 2'd2;
 
 always_comb begin
 	//default
@@ -22,13 +23,13 @@ always_comb begin
 
 	//FSM
 	case(state_r)
-	S_IDLE: if(en & i_dac_data)	state_t = S_PLAY; 
-	S_WAIT:	if(!i_daclrck)begin	//wait one cycle
+	S_IDLE: if(i_en & i_daclrck)	state_t = S_WAIT; 
+	S_WAIT:	begin	//wait one cycle
 		count_t = 0;
 		state_t = S_PLAY;
 	end
 	S_PLAY:begin
-		if(!en)	state_t = S_IDLE;
+		if(!i_en)	state_t = S_IDLE;
 		else if(!i_daclrck)begin
 			if (count_r<4'd15) begin
 				dac_data_t = i_dac_data[count_r];
@@ -36,10 +37,11 @@ always_comb begin
 			end
 			else begin
 				dac_data_t = i_dac_data[count_r];
-				state_t = S_WAIT;
+				state_t = S_IDLE;
 			end
 		end
 	end
+	endcase
 end
 
 
