@@ -53,16 +53,24 @@ module Top (
 // parameter S_PLAY       = 4;
 // parameter S_PLAY_PAUSE = 5;
 
+logic i2c_oen, i2c_sdat;
+logic [19:0] addr_record, addr_play;
+logic [15:0] data_record, data_play, dac_data;
+logic [19:0] o_count;
+logic [19:0] final_address;
+
+
 parameter S_INIT = 3'd0;
 parameter S_READY = 3'd1;
 parameter S_RECORD = 3'd2;
 parameter S_PLAY = 3'd3;
 parameter S_PLAY_PAUSE = 3'd4;
+parameter S_PLAY_FAST = 3'd5;
+parameter S_PLAY_SLOW = 3'd6;
 
+//control var
+logic [2:0] state_t, state_r;
 
-logic i2c_oen, i2c_sdat;
-logic [19:0] addr_record, addr_play;
-logic [15:0] data_record, data_play, dac_data;
 
 assign io_I2C_SDAT = (i2c_oen) ? i2c_sdat : 1'bz;
 
@@ -79,25 +87,35 @@ assign o_SRAM_UB_N = 1'b0;
 // below is a simple example for module division
 // you can design these as you like
 
-//control var
-logic [2:0] state_t, state_r;
 
 //init var
 logic init_finished;
+// assign init_finished = init_finished_r;
 
 //recorder var
-logic recorder_start;
-logic recorder_pause;
+logic recorder_start, recorder_start_r, recorder_start_t;
+logic recorder_pause, recorder_pause_r, recorder_pause_t;
+logic recorder_stop, recorder_stop_r, recorder_stop_t;
+assign recorder_start = recorder_start_r;
+assign recorder_pause = recorder_pause_r;
+assign recorder_stop = recorder_stop_r;
 
 //player var
-logic player_start;
-logic player_stop;
-logic player_fast;
-logic player_slow;
+logic player_start, player_start_r, player_start_t;
+logic player_pause, player_pause_r, player_pause_t;
+logic player_stop, player_stop_r, player_stop_t;
+logic player_fast, player_fast_r, player_fast_t;
+logic player_slow, player_slow_r, player_slow_t;
+logic player_slow1, player_slow1_r, player_slow1_t;
+assign player_start = player_start_r;
+assign player_pause = player_pause_r;
+assign player_stop = player_stop_r;
+assign player_fast = player_fast_r;
+assign player_slow = player_slow_r;
+assign player_slow1 = player_slow1_r;
 
 //key up 
 logic key_0_up, key_1_up, key_2_up;
-
 
 
 
@@ -105,7 +123,7 @@ logic key_0_up, key_1_up, key_2_up;
 // sequentially sent out settings to initialize WM8731 with I2C protocal
 I2cInitializer init0(
 	.i_rst_n(i_rst_n),
-	.i_clk(i_clk_100K),
+	.i_clk(i_clk_100k),
 	.i_start(!i_rst_n),
 	.o_finished(init_finished),
 	.o_sclk(o_I2C_SCLK),
@@ -124,11 +142,12 @@ AudDSP dsp0(
 	.i_stop(player_stop),
 	.i_fast(player_fast),
 	.i_slow_0(player_slow), // constant interpolation
-	.i_slow_1(), // linear interpolation
+	.i_slow_1(player_slow1), // linear interpolation
 	.i_daclrck(i_AUD_DACLRCK),
 	.i_sram_data(data_play),
 	.o_dac_data(dac_data),
-	.o_sram_addr(addr_play)
+	.o_sram_addr(addr_play),
+	.final_address(final_address)
 );
 
 // === AudPlayer ===
@@ -154,52 +173,62 @@ AudRecorder recorder0(
 	.i_data(i_AUD_ADCDAT),
 	.o_address(addr_record),
 	.o_data(data_record),
+	.o_count(o_count)
 );
 
 always_comb begin
 	// design your control here
 	//default
 	state_t = state_r;
+	// init_finished_t = init_finished_r;
+	recorder_start_t = recorder_start_r;
+	recorder_pause_t = recorder_pause_r;
+	recorder_stop_t = recorder_stop_r;
+	player_start_t = player_start_r;
+	player_pause_t = player_pause_r;
+	player_stop_t = player_stop_r;
 	player_fast_t = player_fast_r;
 	player_slow_t = player_slow_r;
+	player_slow1_t = player_slow1_r;
+	
 
 	//FSM
 	case(state_r)
-	S_INIT:if (init_finished) state_t = S_READY;
+	S_INIT: if (init_finished) state_t = S_READY;
 	S_READY:begin 
-		recorder_stop = 0;
-		player_stop = 0;
+		recorder_stop_t = 0;
+		player_stop_t = 0;
 		if(!i_key_0) key_0_up = 1;
 		if(!i_key_1) key_1_up = 1;
 		if (i_key_0 && key_0_up) begin //recorder start
 			state_t = S_RECORD;
-			recorder_start = 1;
-			key_0_up = 0
+			recorder_start_t = 1;
+			key_0_up = 0;
 		end
 		else if (i_key_1 && key_1_up) begin
 			state_t = S_PLAY;
-			player_start = 1;
-			key_1_up = 0
+			player_start_t = 1;
+			key_1_up = 0;
 		end
 	end
 	S_RECORD:begin
 		if (!i_key_0) key_0_up = 1;
 		if (i_key_0 && key_0_up) begin //recorder pause
 			state_t = S_READY;
-			recorder_start = 0;
-			recorder_stop = 1;
+			recorder_start_t = 0;
+			recorder_stop_t = 1;
 			key_0_up = 0;
 		end
 		
 	end
 	S_PLAY: begin
-		if(!key_1_up) key_1_up = 1;
-		if(!key_0_up) key_0_up = 1;
-		if(!key_2_up) key_2_up = 1;
+		if(!i_key_1) key_1_up = 1;
+		if(!i_key_0) key_0_up = 1;
+		if(!i_key_2) key_2_up = 1;
 		if (i_key_1 && key_1_up) begin //player pause
 			state_t = S_PLAY_PAUSE;
-			player_start = 0;
-			player_pause = 1;
+			player_start_t = 0;
+			player_pause_t = 1;
 			key_1_up = 0;
 		end
 		else if (i_key_0 && key_0_up) begin //player faster
@@ -217,47 +246,79 @@ always_comb begin
 			state_t = state_r;
 			player_fast_t = 0;
 			player_slow_t = 0;
-			player_start = 1;
-			player_pause = 0;
+			player_start_t = 1;
+			player_pause_t = 0;
 		end
 	end
 	
 	S_PLAY_PAUSE:begin
-		if(!key_1_up) key_1_up = 1;
-		if(!key_2_up) key_2_up = 1;
+		if(!i_key_1) key_1_up = 1;
+		if(!i_key_2) key_2_up = 1;
 
 		if (i_key_1 && key_1_up) begin //player start again
 			state_t = S_PLAY;
-			player_start = 1;
-			player_pause = 0;
-			player_stop = 0;
+			player_start_t = 1;
+			player_pause_t = 0;
+			player_stop_t = 0;
+			key_1_up = 0;
 		end
-		if else (i_key_2 && key_2_up) begin //player stop
+		else if (i_key_2 && key_2_up) begin //player stop
 			state_t = S_READY;
-			player_start = 0;
-			recorder_pause = 0;
-			player_stop = 1;
+			player_start_t = 0;
+			recorder_pause_t = 0;
+			player_stop_t = 1;
 		end
 	end
 	endcase
 end
 
-always_ff @(posedge i_AUD_BCLK or posedge i_rst_n) begin
+always_ff @(posedge i_clk or negedge i_rst_n) begin
 	if (!i_rst_n) begin
 		state_r <= S_INIT;
-		init_finished = 0;
-		recorder_start = 0;
-		recorder_pause = 0;
-		player_start = 0;
-		player_pause = 0;
-		player_stop = 0;
+		// init_finished <= 0;
+		recorder_start_r <= 0;
+		recorder_pause_r <= 0;
+		recorder_stop_r <= 0;
+		player_start_r <= 0;
+		player_pause_r <= 0;
+		player_stop_r <= 0;
 		player_fast_r <= 0;
 		player_slow_r <= 0;
+		player_slow1_r <= 0;
 	end
+	// else if(i_key_0 == 1)
+	// begin
+	// 	if(state_r == S_READY)
+	// 	begin
+	// 		state_r <= S_RECORD;
+	// 		recorder_start_r <= 1;
+	// 		recorder_stop_r <= 0;
+	// 	end
+	// 	else if (state_r == S_RECORD)
+	// 	begin
+	// 		state_r <= S_READY;
+	// 		recorder_start_r <= 0;
+	// 		recorder_stop_r <= 1;
+	// 	end
+	// 	recorder_pause_r <= recorder_pause_t;
+	// 	player_start_r <= player_start_t;
+	// 	player_pause_r <= player_pause_t;
+	// 	player_stop_r <= player_stop_t;
+	// 	player_fast_r <= player_fast_t;
+	// 	player_slow_r <= player_slow_t;
+	// 	player_slow1_r <= player_slow1_t;
+	// end
 	else begin
-		state_r <= S_INIT;
+		state_r <= state_t;
+		recorder_start_r <= recorder_start_t;
+		recorder_pause_r <= recorder_pause_t;
+		recorder_stop_r <= recorder_stop_t;
+		player_start_r <= player_start_t;
+		player_pause_r <= player_pause_t;
+		player_stop_r <= player_stop_t;
 		player_fast_r <= player_fast_t;
 		player_slow_r <= player_slow_t;
+		player_slow1_r <= player_slow1_t;
 	end
 end
 
