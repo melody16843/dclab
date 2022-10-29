@@ -80,7 +80,6 @@ begin
             begin
                 state_recd_w = S_READ;
                 counter_w = 8'd0;
-                o_data_w = 0;
             end
             else
             begin
