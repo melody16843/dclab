@@ -28,11 +28,23 @@ wire    i_AUD_BCLK;
 wire    i_AUD_DACLRCK;
 logic   o_AUD_DACDAT;
 
+reg record_input, adclrck, bclk, dacrlck;
+assign i_AUD_ADCDAT = record_input;
+assign i_AUD_ADCLRCK = adclrck;
+assign i_AUD_BCLK = bclk;
+assign i_AUD_DACLRCK = dacrlck;
+
 initial i_clk = 0;
 initial i_clk_100k = 0;
+initial bclk = 0;
+initial adclrck = 0;
+initial dacrlck = 0;
 
 always #(cycle/2.0) i_clk = ~i_clk;
 always #(cycle/5.0) i_clk_100k = ~i_clk_100k;
+always #(cycle) bclk = ~bclk;
+always #(cycle*50)  adclrck = ~adclrck;
+always #(cycle*50)	dacrlck = ~dacrlck;
 
 Top top0(
     .i_rst_n(i_rst_n),
@@ -68,7 +80,7 @@ initial begin
     i_key_0 = 0;
     i_key_1 = 0;
     i_key_2 = 0;
-    
+    record_input = 0;
 
 
     @(negedge i_clk);
@@ -87,8 +99,15 @@ initial begin
     @(negedge i_clk);
     @(negedge i_clk) i_key_0 = 0;
 
-    for(int i = 0; i < 295; i++) begin
+    for(int i = 0; i < 74; i++) begin
         @(negedge i_clk);
+		record_input = 0;
+		@(negedge i_clk);
+		record_input = 0;
+		@(negedge i_clk);
+		record_input = 1;
+		@(negedge i_clk);
+		record_input = 1;
     end
     
     @(negedge i_clk) i_key_0 = 1;  // stop recording

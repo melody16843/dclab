@@ -84,6 +84,8 @@ assign o_SRAM_OE_N = 1'b0;
 assign o_SRAM_LB_N = 1'b0;
 assign o_SRAM_UB_N = 1'b0;
 
+assign final_address = o_count;
+
 // below is a simple example for module division
 // you can design these as you like
 
@@ -147,7 +149,7 @@ AudDSP dsp0(
 	.i_sram_data(data_play),
 	.o_dac_data(dac_data),
 	.o_sram_addr(addr_play),
-	.final_address(final_address)
+	.i_final_address(final_address)
 );
 
 // === AudPlayer ===
@@ -212,7 +214,10 @@ always_comb begin
 		end
 	end
 	S_RECORD:begin
-		if (!i_key_0) key_0_up = 1;
+		if (!i_key_0) begin
+			key_0_up = 1;
+			recorder_start_t = 0;
+		end
 		if (i_key_0 && key_0_up) begin //recorder pause
 			state_t = S_READY;
 			recorder_start_t = 0;
@@ -237,7 +242,7 @@ always_comb begin
 			key_0_up = 0;
 			
 		end
-		else if (i_key_2 && key_2_up) begin
+		else if (i_key_2 && key_2_up) begin //player slower
 			state_t = S_PLAY;
 			player_slow_t = 1;
 			key_2_up = 0;
