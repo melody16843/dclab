@@ -7,83 +7,65 @@ module AudRecorder(
     input           i_stop,
     input           i_data,
     output  [19:0]  o_address,
-    output  [15:0]  o_data
+    output  [15:0]  o_data,
+    output  [23:0]  o_count  // # of 16-bits data recorded
 );
 
 parameter   S_IDLE = 0;
-parameter   S_READ = 1;
-parameter   S_WAIT = 2;
+parameter   S_RECD = 1;
+parameter   S_READ = 0;
+parameter   S_WAIT = 1;
 
 
 
-logic   [1:0]   state_r, state_w;
+logic           state_r, state_w;
+logic           state_recd_r, state_recd_w;
 logic   [7:0]   counter_r, counter_w;
 logic   [15:0]  o_data_r, o_data_w;
+logic   [23:0]  o_count_r, o_count_w;
 
 assign o_data = o_data_r;
+assign o_count = o_count_r;
 
 
 always_comb
 begin
     /// default ///
     state_w = state_r;
+    state_recd_w = state_recd_r;
     counter_w = counter_r;
     o_data_w = o_data_r;
+    o_count_w = o_count_r;
+    
 
     case(state_r)
     S_IDLE:
     begin
-        if(i_start)
-        begin
-            if(i_stop)
-            begin
-                state_w = S_IDLE;
-                counter_w = 8'd0;
-                o_data_w = 16'd0;
-            end
-            else
-            begin
-                if(!i_lrc) 
-                begin
-                    state_w = S_READ;
-                    counter_w = 8'd0;
-                end
-                else 
-                begin
-                    state_w = S_WAIT;
-                    counter_w = counter_r;
-                end
-            end
-        end
-        else 
-        begin
-            state_w = state_r;
-            counter_w = counter_r;
-        end
+        state_w = S_IDLE;
     end
 
-    S_READ:
+    S_RECD:
     begin
-        if(i_stop)
+        case(state_recd_r)
+        S_READ:
         begin
-            state_w = S_IDLE;
-            counter_w = 8'd0;
-            o_data_w = 16'd0;
-        end
-        else
-        begin
-            if (i_lrc)
+            if (!i_lrc)
             begin
-                state_w = S_IDLE;
+                state_recd_w = S_WAIT;
                 counter_w = counter_r;
                 o_data_w = o_data_r;
             end
             else
             begin
+                state_recd_w = state_recd_r;
                 counter_w = counter_r + 8'b1;
                 if (counter_r >= 8'd0 && counter_r < 8'd16)
                 begin
                     o_data_w = {o_data_r[14:0], i_data};
+                end
+                else if (counter_r == 8'd16)
+                begin
+                    o_count_w = o_count_r + 1;
                 end
                 else
                 begin
@@ -91,39 +73,29 @@ begin
                 end
             end
         end
-    end
 
-    S_WAIT:
-    begin
-        if(i_stop)
+        S_WAIT:
         begin
-            state_w = S_IDLE;
-            counter_w = 8'd0;
-            o_data_w = 16'd0;
-        end
-        else
-        begin
-            if (!i_lrc)
+            if (i_lrc)
             begin
-                state_w = S_READ;
+                state_recd_w = S_READ;
                 counter_w = 8'd0;
             end
             else
             begin
-                state_w = state_r;
+                state_recd_w = state_recd_r;
                 counter_w = counter_r;
             end
         end
+        default: state_recd_w = S_WAIT;
+        endcase
     end
-
-
 
     default: state_w = S_IDLE;
     endcase
-
 end
 
-// 1100_1010_1010_0110
+
 
 always_ff @(posedge i_clk or negedge i_rst_n)
 begin
@@ -132,13 +104,33 @@ begin
         state_r <= S_IDLE;
         counter_r <= 8'd0;
         o_data_r <= 16'd0;
+        o_count_r <= 24'd0;
 
+    end
+    else if(i_start)
+    begin
+        state_r <= S_RECD;
+        counter_r = 8'd0;
+        o_data_r <= 16'd0;
+        o_count_r <= 24'd0;
+        if (!i_lrc) state_recd_r <= S_WAIT;
+        else state_recd_r <= S_READ;
+    end
+    else if(i_stop)
+    begin
+        state_r <= S_IDLE;
+        counter_r = 8'd0;
+        o_data_r <= 16'd0;
+        o_count_r <= o_count_w;
+        state_recd_r <= state_recd_w;
     end
     else
     begin
         state_r <= state_w;
         counter_r <= counter_w;
         o_data_r <= o_data_w;
+        o_count_r <= o_count_w;
+        state_recd_r <= state_recd_w;
     end
 end
 
