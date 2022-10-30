@@ -8,7 +8,7 @@ module AudRecorder(
     input           i_data,
     output  [19:0]  o_address,
     output  [15:0]  o_data,
-    output  [23:0]  o_count  // # of 16-bits data recorded
+    output  [19:0]  o_count  // # of 16-bits data recorded
 );
 
 parameter   S_IDLE = 0;
@@ -22,10 +22,12 @@ logic           state_r, state_w;
 logic           state_recd_r, state_recd_w;
 logic   [7:0]   counter_r, counter_w;
 logic   [15:0]  o_data_r, o_data_w;
-logic   [23:0]  o_count_r, o_count_w;
+logic   [19:0]  o_count_r, o_count_w;
+logic   [19:0]  o_address_r, o_address_w;
 
 assign o_data = o_data_r;
 assign o_count = o_count_r;
+assign o_address = o_address_r;
 
 
 always_comb
@@ -36,6 +38,7 @@ begin
     counter_w = counter_r;
     o_data_w = o_data_r;
     o_count_w = o_count_r;
+    o_address_w = o_address_r;
     
 
     case(state_r)
@@ -66,6 +69,7 @@ begin
                 else if (counter_r == 8'd16)
                 begin
                     o_count_w = o_count_r + 1;
+                    
                 end
                 else
                 begin
@@ -80,6 +84,7 @@ begin
             begin
                 state_recd_w = S_READ;
                 counter_w = 8'd0;
+                o_address_w = o_address_r + 1;
             end
             else
             begin
@@ -104,15 +109,16 @@ begin
         state_r <= S_IDLE;
         counter_r <= 8'd0;
         o_data_r <= 16'd0;
-        o_count_r <= 24'd0;
-
+        o_count_r <= 20'd0;
+        o_address_r <= 20'd0;
     end
     else if(i_start)
     begin
         state_r <= S_RECD;
-        counter_r = 8'd0;
-        o_data_r <= 16'd0;
-        o_count_r <= 24'd0;
+        counter_r <= counter_w;
+        o_data_r <= o_data_w;
+        o_count_r <= o_count_w;
+        o_address_r <= o_address_w;
         if (!i_lrc) state_recd_r <= S_WAIT;
         else state_recd_r <= S_READ;
     end
@@ -122,6 +128,7 @@ begin
         counter_r = 8'd0;
         o_data_r <= 16'd0;
         o_count_r <= o_count_w;
+        o_address_r <= o_address_w;
         state_recd_r <= state_recd_w;
     end
     else
@@ -130,6 +137,7 @@ begin
         counter_r <= counter_w;
         o_data_r <= o_data_w;
         o_count_r <= o_count_w;
+        o_address_r <= o_address_w;
         state_recd_r <= state_recd_w;
     end
 end
