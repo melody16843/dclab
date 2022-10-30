@@ -11,10 +11,11 @@ module AudDSP(
     input i_daclrck,
     input [15:0] i_sram_data,
     output [15:0] o_dac_data,
-    output [19:0] o_sram_addr
+    output [19:0] o_sram_addr,
+    input [19:0] i_final_address
   );
 
-  localparam max_addr = 20'b11111111111111111111;
+  // localparam i_final_address = 20'b11111111111111111111;
   //state
   localparam S_IDLE = 3'd0;
   localparam S_FAST = 3'd1;
@@ -76,11 +77,11 @@ module AudDSP(
         dac_w = signed'(i_sram_data);
         sram_addr_w = sram_addr_w + i_speed + 1;
         state_w = S_PREP;
-        if(sram_addr_w >= max_addr - i_speed - 1)
+        if(sram_addr_w >= i_final_address - i_speed - 1)
         begin
-          sram_addr_w = max_addr;
+          sram_addr_w = i_final_address;
         end
-        if(sram_addr_w >= max_addr)
+        if(sram_addr_w >= i_final_address)
         begin
           state_w = S_IDLE;
         end
@@ -100,7 +101,7 @@ module AudDSP(
           count_w = count_w + 1;
         end
 
-        if(sram_addr_w >= max_addr)
+        if(sram_addr_w >= i_final_address)
         begin
           state_w = S_IDLE;
         end
@@ -121,7 +122,7 @@ module AudDSP(
           count_w = count_w + 1;
         end
 
-        if(sram_addr_w >= max_addr)
+        if(sram_addr_w >= i_final_address)
         begin
           state_w = S_IDLE;
         end
