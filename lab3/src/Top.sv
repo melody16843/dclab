@@ -109,12 +109,14 @@ logic player_stop, player_stop_r, player_stop_t;
 logic player_fast, player_fast_r, player_fast_t;
 logic player_slow, player_slow_r, player_slow_t;
 logic player_slow1, player_slow1_r, player_slow1_t;
+logic player_en, player_en_r, player_en_t;
 assign player_start = player_start_r;
 assign player_pause = player_pause_r;
 assign player_stop = player_stop_r;
 assign player_fast = player_fast_r;
 assign player_slow = player_slow_r;
 assign player_slow1 = player_slow1_r;
+assign player_en = player_en_r;
 
 //key up 
 logic key_0_up, key_1_up, key_2_up;
@@ -158,7 +160,7 @@ AudPlayer player0(
 	.i_rst_n(i_rst_n),
 	.i_bclk(i_AUD_BCLK),
 	.i_daclrck(i_AUD_DACLRCK),
-	.i_en(player_start), // enable AudPlayer only when playing audio, work with AudDSP
+	.i_en(player_en), // enable AudPlayer only when playing audio, work with AudDSP
 	.i_dac_data(dac_data), //dac_data
 	.o_aud_dacdat(o_AUD_DACDAT)
 );
@@ -192,6 +194,7 @@ always_comb begin
 	player_fast_t = player_fast_r;
 	player_slow_t = player_slow_r;
 	player_slow1_t = player_slow1_r;
+	player_en_t = player_en_r;
 	
 
 	//FSM
@@ -211,6 +214,7 @@ always_comb begin
 			state_t = S_PLAY;
 			player_start_t = 1;
 			key_1_up = 0;
+			player_en_t = 1;
 		end
 	end
 	S_RECORD:begin
@@ -227,14 +231,26 @@ always_comb begin
 		
 	end
 	S_PLAY: begin
-		if(!i_key_1) key_1_up = 1;
-		if(!i_key_0) key_0_up = 1;
-		if(!i_key_2) key_2_up = 1;
+		if(!i_key_1) begin
+			key_1_up = 1;
+			player_start_t = 0;
+		end
+		if(!i_key_0) begin
+			player_fast_t = 0;
+			state_t = S_PLAY;
+			key_0_up = 1;
+		end
+		if (!i_key_2) begin
+			player_slow_t = 0;
+			state_t = S_PLAY;
+			key_2_up = 1;
+		end
 		if (i_key_1 && key_1_up) begin //player pause
 			state_t = S_PLAY_PAUSE;
 			player_start_t = 0;
 			player_pause_t = 1;
 			key_1_up = 0;
+			player_en_t = 0;
 		end
 		else if (i_key_0 && key_0_up) begin //player faster
 			state_t = S_PLAY;
@@ -247,17 +263,27 @@ always_comb begin
 			player_slow_t = 1;
 			key_2_up = 0;
 		end
-		else begin
-			state_t = state_r;
+
+	end
+	S_PLAY_FAST: begin
+		if(!i_key_0) begin
 			player_fast_t = 0;
-			player_slow_t = 0;
-			player_start_t = 1;
-			player_pause_t = 0;
+			state_t = S_PLAY;
+			key_0_up = 1;
 		end
 	end
-	
+	S_PLAY_SLOW: begin
+		if (!i_key_2) begin
+			player_slow_t = 0;
+			state_t = S_PLAY;
+			key_2_up = 1;
+		end
+	end
 	S_PLAY_PAUSE:begin
-		if(!i_key_1) key_1_up = 1;
+		if(!i_key_1) begin
+			key_1_up = 1;
+			player_pause_t = 0;
+		end
 		if(!i_key_2) key_2_up = 1;
 
 		if (i_key_1 && key_1_up) begin //player start again
@@ -290,29 +316,8 @@ always_ff @(posedge i_clk or negedge i_rst_n) begin
 		player_fast_r <= 0;
 		player_slow_r <= 0;
 		player_slow1_r <= 0;
+		player_en_r <= 0;
 	end
-	// else if(i_key_0 == 1)
-	// begin
-	// 	if(state_r == S_READY)
-	// 	begin
-	// 		state_r <= S_RECORD;
-	// 		recorder_start_r <= 1;
-	// 		recorder_stop_r <= 0;
-	// 	end
-	// 	else if (state_r == S_RECORD)
-	// 	begin
-	// 		state_r <= S_READY;
-	// 		recorder_start_r <= 0;
-	// 		recorder_stop_r <= 1;
-	// 	end
-	// 	recorder_pause_r <= recorder_pause_t;
-	// 	player_start_r <= player_start_t;
-	// 	player_pause_r <= player_pause_t;
-	// 	player_stop_r <= player_stop_t;
-	// 	player_fast_r <= player_fast_t;
-	// 	player_slow_r <= player_slow_t;
-	// 	player_slow1_r <= player_slow1_t;
-	// end
 	else begin
 		state_r <= state_t;
 		recorder_start_r <= recorder_start_t;
@@ -324,6 +329,7 @@ always_ff @(posedge i_clk or negedge i_rst_n) begin
 		player_fast_r <= player_fast_t;
 		player_slow_r <= player_slow_t;
 		player_slow1_r <= player_slow1_t;
+		player_en_r <= player_en_t;
 	end
 end
 

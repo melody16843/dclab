@@ -15,7 +15,7 @@ module AudDSP(
 	output [15:0] o_dac_data,
 	output [19:0] o_sram_addr,
 
-    input i_final_address
+    input [19:0] i_final_address
 );
 
 logic [15:0] dac_t, dac_r;
@@ -25,6 +25,7 @@ logic [19:0] sram_addr_t, sram_addr_r;
 logic [2:0] interval_t, interval_r;
 
 logic [4:0] speed_t, speed_r;   //current speed 
+logic [1:0] state_speed_t, state_speed_r;
 
 logic [2:0] state_t, state_r;
 
@@ -36,6 +37,9 @@ parameter S_FILL = 3'd1;
 parameter S_COMP = 3'd2;
 parameter S_PAUSE = 3'd3;
 
+parameter S_FAST = 2'd1;
+parameter S_SLOW = 2'd2;
+
 
 
 always_comb begin
@@ -46,10 +50,12 @@ always_comb begin
     interval_t = interval_r;
     speed_t = speed_r;
     state_t = state_r;
+    state_speed_t = state_speed_r;
     //FSM
     //filling part
     case(state_r)
-    S_IDLE : if(i_start) state_t = S_FILL;
+    S_IDLE :
+        if(i_start) state_t = S_FILL;
     S_FILL : begin
         //filling
         if(i_stop)begin
@@ -109,7 +115,7 @@ always_comb begin
         else    state_t = state_r;
     end
 	S_COMP  : begin
-        if(i_stop || sram_addr_t>final_address)begin
+        if(i_stop || sram_addr_t > i_final_address)begin
                 sram_addr_t = 0;
                 speed_t = 5'd7; //normal speed
                 state_t = S_IDLE;
@@ -127,14 +133,29 @@ always_comb begin
 
 
     //speed part
-    if(i_fast & speed_r < 5'd14) speed_t = speed_r + 1;
-    else if(i_slow_0 & speed_r > 0) speed_t = speed_r - 1;
-    else if(i_slow_1 & speed_r > 0) speed_t = speed_r - 1; 
-    else speed_t = speed_r;
+    case(state_speed_r)
+    S_IDLE: begin
+    if(i_fast & speed_r < 5'd14) state_speed_t = S_FAST;
+    else if(i_slow_0 & speed_r > 0) state_speed_t = S_SLOW;
+    else if(i_slow_1 & speed_r > 0) state_speed_t = S_SLOW; 
+    end
+    S_FAST: begin
+        if(!i_fast)begin
+            speed_t = speed_r + 1;
+            state_speed_t = S_IDLE;
+        end
+    end
+    S_SLOW: begin
+        if(!i_slow_0 || !i_slow_1)begin
+            speed_t = speed_r - 1;
+            state_speed_t = S_IDLE;
+        end
+    end
+    endcase
 
 end
 
-always_ff @(posedge i_clk) begin
+always_ff @(posedge i_clk or negedge i_rst_n) begin
     if(!i_rst_n)begin
         dac_r <= 0;
         addr_count_r <= 0;
@@ -142,6 +163,7 @@ always_ff @(posedge i_clk) begin
         interval_r <= 0;
         state_r <= S_IDLE;
         speed_r <= 5'd7;
+        state_speed_r <= 0;
 
     end
     else begin
@@ -151,6 +173,7 @@ always_ff @(posedge i_clk) begin
         interval_r <=  interval_t;
         state_r <= state_t;
         speed_r <= speed_t;
+        state_speed_r <= state_speed_t;
     end
 end
 

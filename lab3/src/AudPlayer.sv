@@ -45,7 +45,7 @@ always_comb begin
 end
 
 
-always_ff @(posedge i_bclk)begin
+always_ff @(posedge i_bclk or negedge i_rst_n)begin
 	if(!i_rst_n)begin
 		dac_data_r <= 0;
 		count_r <= 5'd0;

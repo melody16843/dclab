@@ -34,6 +34,9 @@ assign i_AUD_ADCLRCK = adclrck;
 assign i_AUD_BCLK = bclk;
 assign i_AUD_DACLRCK = dacrlck;
 
+reg [15:0] play_input;
+assign io_SRAM_DQ = o_SRAM_ADDR+3;
+
 initial i_clk = 0;
 initial i_clk_100k = 0;
 initial bclk = 0;
@@ -109,6 +112,28 @@ initial begin
 		@(negedge i_clk);
 		record_input = 1;
     end
+
+    for(int i = 0; i < 28; i++) begin
+        @(negedge i_clk);
+		record_input = 1
+		@(negedge i_clk);
+		record_input = 1;
+		@(negedge i_clk);
+		record_input = 0;
+		@(negedge i_clk);
+		record_input = 1;
+    end
+
+    for(int i = 0; i < 28; i++) begin
+        @(negedge i_clk);
+		record_input = 1;
+		@(negedge i_clk);
+		record_input = 0;
+		@(negedge i_clk);
+		record_input = 0;
+		@(negedge i_clk);
+		record_input = 1;
+    end
     
     @(negedge i_clk) i_key_0 = 1;  // stop recording
     @(negedge i_clk);
@@ -134,7 +159,14 @@ initial begin
     @(negedge i_clk) i_key_1 = 0;
 
     for(int i = 0; i < 100; i++) begin
-        @(negedge i_clk);
+        @(negedge i_clk)
+        // if(o_SRAM_ADDR==0) begin
+        //     play_input = 1;
+        // end
+        // else if (o_SRAM_ADDR == 1) begin
+        //     play
+        // end
+
     end
     
     @(negedge i_clk) i_key_1 = 1;  // playing pause
