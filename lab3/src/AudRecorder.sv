@@ -8,7 +8,8 @@ module AudRecorder(
     input           i_data,
     output  [19:0]  o_address,
     output  [15:0]  o_data,
-    output  [19:0]  o_count  // # of 16-bits data recorded
+    output  [19:0]  o_count,  // # of 16-bits data recorded
+    output  [3:0]   state_recorder
 );
 
 parameter   S_IDLE = 0;
@@ -28,6 +29,7 @@ logic   [19:0]  o_address_r, o_address_w;
 assign o_data = o_data_r;
 assign o_count = o_count_r;
 assign o_address = o_address_r;
+assign state_recorder = state_r;
 
 
 always_comb
@@ -61,16 +63,16 @@ begin
             else
             begin
                 state_recd_w = state_recd_r;
-                counter_w = counter_r + 8'b1;
                 if (counter_r >= 8'd0 && counter_r < 8'd16)
                 begin
+                    counter_w = counter_r + 8'b1;
                     o_data_w = {o_data_r[14:0], i_data};
                 end
-                else if (counter_r == 8'd16)
-                begin
-                    o_count_w = o_count_r + 1;
+                // else if (counter_r == 8'd16)
+                // begin
+                //     o_count_w = o_count_r + 1;
                     
-                end
+                // end
                 else
                 begin
                     o_data_w = o_data_r;
@@ -85,6 +87,8 @@ begin
                 state_recd_w = S_READ;
                 counter_w = 8'd0;
                 o_address_w = o_address_r + 1;
+                o_count_w = o_count_r + 1;
+                if(&o_address_r) state_w = S_IDLE;
             end
             else
             begin
@@ -111,6 +115,7 @@ begin
         o_data_r <= 16'd0;
         o_count_r <= 20'd0;
         o_address_r <= 20'd0;
+        o_count_r <=0;
     end
     else if(i_start)
     begin
