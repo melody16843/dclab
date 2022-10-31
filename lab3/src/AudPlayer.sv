@@ -4,12 +4,15 @@ module AudPlayer(
 	input i_daclrck,
 	input i_en, // enable AudPlayer only when playing audio, work with AudDSP
 	input [15:0]i_dac_data, //dac_data
-	output o_aud_dacdat
+	output o_aud_dacdat,
+	output [4:0] state_play
 );
 logic dac_data_t, dac_data_r;
 logic [4:0] count_t, count_r;
+assign o_aud_dacdat = dac_data_r;
 
 logic [1:0] state_t, state_r;
+assign state_play = state_r;
 
 parameter	S_IDLE = 2'd0;
 parameter	S_WAIT = 2'd1;
@@ -23,20 +26,20 @@ always_comb begin
 
 	//FSM
 	case(state_r)
-	S_IDLE: if(i_en & i_daclrck)	state_t = S_WAIT; 
+	S_IDLE: if(i_en && !i_daclrck)	state_t = S_WAIT; 
 	S_WAIT:	begin	//wait one cycle
 		count_t = 0;
 		state_t = S_PLAY;
 	end
 	S_PLAY:begin
 		if(!i_en)	state_t = S_IDLE;
-		else if(!i_daclrck)begin
+		else if(i_daclrck)begin
 			if (count_r<4'd15) begin
-				dac_data_t = i_dac_data[count_r];
+				dac_data_t = i_dac_data[4'd15-count_r];
 				count_t = count_r +1;
 			end
 			else begin
-				dac_data_t = i_dac_data[count_r];
+				dac_data_t = i_dac_data[4'd15-count_r];
 				state_t = S_IDLE;
 			end
 		end
