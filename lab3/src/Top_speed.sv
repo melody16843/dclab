@@ -1,4 +1,4 @@
-module Top (
+module Top_speed (
     input i_rst_n,
     input i_clk,
     input i_key_0,
@@ -30,11 +30,11 @@ module Top (
     inout  i_AUD_DACLRCK,
     output o_AUD_DACDAT,
 
-    output [3:0] state
+    output [4:0] state,
 
     // SEVENDECODER (optional display)
-    // output [5:0] o_record_time,
-    // output [5:0] o_play_time,
+    output [4:0] o_record_time,
+    output [4:0] o_play_time
 
     // LCD (optional display)
     // input        i_clk_800k,
@@ -65,25 +65,26 @@ module Top (
   logic [19:0] final_address;
 
 
-  parameter S_INIT = 4'd0;
-  parameter S_READY = 4'd1;
-  parameter S_RECORD = 4'd2;
-  parameter S_PLAY = 4'd3;
-  parameter S_PLAY_PAUSE = 4'd4;
-  parameter S_PLAY_FAST = 4'd5;
-  parameter S_PLAY_SLOW = 4'd6;
+  parameter S_INIT = 5'd0;
+  parameter S_READY = 5'd1;
+  parameter S_RECORD = 5'd2;
+  parameter S_PLAY = 5'd3;
+  parameter S_PLAY_PAUSE = 5'd4;
+  parameter S_PLAY_FAST = 5'd5;
+  parameter S_PLAY_SLOW = 5'd6;
 
   //control var
-  logic [3:0] state_t, state_r;
+  logic [4:0] state_t, state_r;
 
   //test section
-  logic [3:0] state_dsp;
+  logic [4:0] state_dsp;
   assign state = state_r;
-  logic [3:0] state_play;
+  logic [4:0] state_play;
   // assign state = player_en;
   // assign state = state_i2c;
-
-
+  assign o_record_time = (state_r == S_RECORD) ? addr_record[19:15] : 5'd0;
+  assign o_play_time = (state_r == S_PLAY) ? addr_play[19:15] : 5'd0;
+  
   assign io_I2C_SDAT = (i2c_oen) ? i2c_sdat : 1'bz;
 
   assign o_SRAM_ADDR = (state_r == S_RECORD) ? addr_record : addr_play[19:0];
@@ -150,14 +151,14 @@ module Top (
                    .o_finished(init_finished),
                    .o_sclk(o_I2C_SCLK),
                    .o_sdat(i2c_sdat),
-                   .o_oen(i2c_oen),// you are outputing (you are not outputing only when you are "ack"ing.)
-                   .state_i2c(state_i2c)
+                   .o_oen(i2c_oen)// you are outputing (you are not outputing only when you are "ack"ing.)
+                  //  .state_i2c(state_i2c)
                  );
 
   // === AudDSP ===
   // responsible for DSP operations including fast play and slow play at different speed
   // in other words, determine which data addr to be fetch for player
-  AudDSP dsp0(
+  AudDSP_0 dsp0(
            .i_rst_n(i_rst_n),
            .i_clk(i_AUD_BCLK),
            .i_start(player_start),
@@ -171,8 +172,8 @@ module Top (
            .i_sram_data(data_play),
            .o_dac_data(dac_data),
            .o_sram_addr(addr_play),
-           .i_final_address(final_address)
-           //.o_final(address_end),
+           .i_final_address(final_address),
+           .o_final(address_end)
            // .state_dsp(state_dsp)
          );
 
@@ -245,7 +246,7 @@ module Top (
           recorder_start_t = 1;
           key_0_up_t = 0;
         end
-        else if (i_key_1 && key_1_up_r)
+        if (i_key_1 && key_1_up_r)
         begin
           state_t = S_PLAY;
           player_start_t = 1;
@@ -296,19 +297,19 @@ module Top (
           key_1_up_t = 0;
           player_en_t = 0;
         end
-        else if (i_key_0 && key_0_up_r)
-        begin //player faster
-          state_t = S_PLAY;
-          player_fast_t = 1;
-          key_0_up_t = 0;
+        // else if (i_key_0 && key_0_up_r)
+        // begin //player faster
+        //   state_t = S_PLAY;
+        //   player_fast_t = 1;
+        //   key_0_up_t = 0;
 
-        end
-        else if (i_key_2 && key_2_up_r)
-        begin //player slower
-          state_t = S_PLAY;
-          player_slow_t = 1;
-          key_2_up_t = 0;
-        end
+        // end
+        // else if (i_key_2 && key_2_up_r)
+        // begin //player slower
+        //   state_t = S_PLAY;
+        //   player_slow_t = 1;
+        //   key_2_up_t = 0;
+        // end
 
         if (address_end)
         begin
@@ -366,7 +367,7 @@ module Top (
     endcase
   end
 
-  always_ff @(posedge i_clk or negedge i_rst_n)
+  always_ff @(posedge i_AUD_BCLK or negedge i_rst_n)
   begin
     if (!i_rst_n)
     begin
