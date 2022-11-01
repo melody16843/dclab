@@ -177,7 +177,10 @@ Top top0(
 	.i_key_0(key0down),
 	.i_key_1(key1down),
 	.i_key_2(key2down),
-	// .i_speed(SW[3:0]), // design how user can decide mode on your own
+	.i_speed(SW[3:0]), // design how user can decide mode on your own
+	.i_fast(SW[7]),
+	.i_slow_0(SW[6]),
+	.i_slow_1(SW[5]),
 	
 	// AudDSP and SRAM
 	.o_SRAM_ADDR(SRAM_ADDR), // [19:0]
@@ -201,8 +204,8 @@ Top top0(
 	.o_AUD_DACDAT(AUD_DACDAT)
 
 	// SEVENDECODER (optional display)
-	// .o_record_time(recd_time),
-	// .o_play_time(play_time),
+	.o_record_time(recd_time),
+	.o_play_time(play_time),
 
 	// LCD (optional display)
 	// .i_clk_800k(CLK_800K),
@@ -218,25 +221,25 @@ Top top0(
 	// .o_ledr(LEDR) // [17:0]
 );
 
-// SevenHexDecoder seven_dec0(
-// 	.i_num(play_time),
-// 	.o_seven_ten(HEX1),
-// 	.o_seven_one(HEX0)
-// );
+SevenHexDecoder seven_dec0(
+	.i_num(play_time),
+	.o_seven_ten(HEX1),
+	.o_seven_one(HEX0)
+ );
 
-// SevenHexDecoder seven_dec1(
-// 	.i_num(recd_time),
-// 	.o_seven_ten(HEX5),
-//  	.o_seven_one(HEX4)
-// );
+SevenHexDecoder seven_dec1(
+ 	.i_num(recd_time),
+ 	.o_seven_ten(HEX5),
+  	.o_seven_one(HEX4)
+);
 
 // comment those are use for display
-assign HEX0 = '1;
-assign HEX1 = '1;
+//assign HEX0 = '1;
+//assign HEX1 = '1;
 assign HEX2 = '1;
 assign HEX3 = '1;
-assign HEX4 = '1;
-assign HEX5 = '1;
+//assign HEX4 = '1;
+//assign HEX5 = '1;
 assign HEX6 = '1;
 assign HEX7 = '1;
 
