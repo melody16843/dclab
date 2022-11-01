@@ -5,6 +5,9 @@ module Top (
     input i_key_1,
     input i_key_2,
     input [3:0] i_speed, // design how user can decide mode on your own
+    input i_fast,
+    input i_slow_0,
+    input i_slow_1,
 
     // AudDSP and SRAM
     output [19:0] o_SRAM_ADDR,
@@ -25,7 +28,9 @@ module Top (
     inout  i_AUD_ADCLRCK,
     inout  i_AUD_BCLK,
     inout  i_AUD_DACLRCK,
-    output o_AUD_DACDAT
+    output o_AUD_DACDAT,
+
+    output [3:0] state
 
     // SEVENDECODER (optional display)
     // output [5:0] o_record_time,
@@ -60,16 +65,23 @@ module Top (
   logic [19:0] final_address;
 
 
-  parameter S_INIT = 3'd0;
-  parameter S_READY = 3'd1;
-  parameter S_RECORD = 3'd2;
-  parameter S_PLAY = 3'd3;
-  parameter S_PLAY_PAUSE = 3'd4;
-  parameter S_PLAY_FAST = 3'd5;
-  parameter S_PLAY_SLOW = 3'd6;
+  parameter S_INIT = 4'd0;
+  parameter S_READY = 4'd1;
+  parameter S_RECORD = 4'd2;
+  parameter S_PLAY = 4'd3;
+  parameter S_PLAY_PAUSE = 4'd4;
+  parameter S_PLAY_FAST = 4'd5;
+  parameter S_PLAY_SLOW = 4'd6;
 
   //control var
-  logic [2:0] state_t, state_r;
+  logic [3:0] state_t, state_r;
+
+  //test section
+  logic [3:0] state_dsp;
+  assign state = state_r;
+  logic [3:0] state_play;
+  // assign state = player_en;
+  // assign state = state_i2c;
 
 
   assign io_I2C_SDAT = (i2c_oen) ? i2c_sdat : 1'bz;
@@ -109,15 +121,22 @@ module Top (
   logic player_fast, player_fast_r, player_fast_t;
   logic player_slow, player_slow_r, player_slow_t;
   logic player_slow1, player_slow1_r, player_slow1_t;
+  logic player_en, player_en_r, player_en_t;
   assign player_start = player_start_r;
   assign player_pause = player_pause_r;
   assign player_stop = player_stop_r;
   assign player_fast = player_fast_r;
   assign player_slow = player_slow_r;
   assign player_slow1 = player_slow1_r;
+  assign player_en = player_en_r;
+
+  logic address_end_r, address_end_t, address_end;
+  // assign address_end_r = address_end;
 
   //key up
-  logic key_0_up, key_1_up, key_2_up;
+  logic key_0_up_r, key_0_up_t;
+  logic key_1_up_r, key_1_up_t;
+  logic key_2_up_r, key_2_up_t;
 
 
 
@@ -126,11 +145,13 @@ module Top (
   I2cInitializer init0(
                    .i_rst_n(i_rst_n),
                    .i_clk(i_clk_100k),
-                   .i_start(!i_rst_n),
+                   //.i_start(!i_rst_n),
+                   .i_start(1'd1),
                    .o_finished(init_finished),
                    .o_sclk(o_I2C_SCLK),
                    .o_sdat(i2c_sdat),
-                   .o_oen(i2c_oen) // you are outputing (you are not outputing only when you are "ack"ing.)
+                   .o_oen(i2c_oen),// you are outputing (you are not outputing only when you are "ack"ing.)
+                   .state_i2c(state_i2c)
                  );
 
   // === AudDSP ===
@@ -143,14 +164,16 @@ module Top (
            .i_pause(player_pause),
            .i_stop(player_stop),
            .i_speed(i_speed),
-           .i_fast(player_fast),
-           .i_slow_0(player_slow), // constant interpolation
-           .i_slow_1(player_slow1), // linear interpolation
+           .i_fast(i_fast),
+           .i_slow_0(i_slow_0), // constant interpolation
+           .i_slow_1(i_slow_1), // linear interpolation
            .i_daclrck(i_AUD_DACLRCK),
            .i_sram_data(data_play),
            .o_dac_data(dac_data),
            .o_sram_addr(addr_play),
            .i_final_address(final_address)
+           //.o_final(address_end),
+           // .state_dsp(state_dsp)
          );
 
   // === AudPlayer ===
@@ -159,9 +182,10 @@ module Top (
               .i_rst_n(i_rst_n),
               .i_bclk(i_AUD_BCLK),
               .i_daclrck(i_AUD_DACLRCK),
-              .i_en(player_start), // enable AudPlayer only when playing audio, work with AudDSP
+              .i_en(player_en), // enable AudPlayer only when playing audio, work with AudDSP
               .i_dac_data(dac_data), //dac_data
-              .o_aud_dacdat(o_AUD_DACDAT)
+              .o_aud_dacdat(o_AUD_DACDAT),
+              .state_play(state_play)
             );
 
   // === AudRecorder ===
@@ -176,7 +200,8 @@ module Top (
                 .i_data(i_AUD_ADCDAT),
                 .o_address(addr_record),
                 .o_data(data_record),
-                .o_count(o_count)
+                .o_count(o_count),
+                .state_recorder(state_recorder)
               );
 
   always_comb
@@ -194,6 +219,11 @@ module Top (
     player_fast_t = player_fast_r;
     player_slow_t = player_slow_r;
     player_slow1_t = player_slow1_r;
+    player_en_t = player_en_r;
+    key_0_up_t = key_0_up_r;
+    key_1_up_t = key_1_up_r;
+    key_2_up_t = key_2_up_r;
+    // address_end_t = address_end_r;
 
 
     //FSM
@@ -206,92 +236,126 @@ module Top (
         recorder_stop_t = 0;
         player_stop_t = 0;
         if(!i_key_0)
-          key_0_up = 1;
+          key_0_up_t = 1;
         if(!i_key_1)
-          key_1_up = 1;
-        if (i_key_0 && key_0_up)
+          key_1_up_t = 1;
+        if (i_key_0 && key_0_up_r)
         begin //recorder start
           state_t = S_RECORD;
           recorder_start_t = 1;
-          key_0_up = 0;
+          key_0_up_t = 0;
         end
-        else if (i_key_1 && key_1_up)
+        else if (i_key_1 && key_1_up_r)
         begin
           state_t = S_PLAY;
           player_start_t = 1;
-          key_1_up = 0;
+          key_1_up_t = 0;
+          player_en_t = 1;
         end
       end
       S_RECORD:
       begin
         if (!i_key_0)
         begin
-          key_0_up = 1;
+          key_0_up_t = 1;
           recorder_start_t = 0;
         end
-        if (i_key_0 && key_0_up)
+        if (i_key_0 && key_0_up_r)
         begin //recorder pause
           state_t = S_READY;
           recorder_start_t = 0;
           recorder_stop_t = 1;
-          key_0_up = 0;
+          key_0_up_t = 0;
         end
 
       end
       S_PLAY:
       begin
         if(!i_key_1)
-          key_1_up = 1;
+        begin
+          key_1_up_t = 1;
+          player_start_t = 0;
+        end
         if(!i_key_0)
-          key_0_up = 1;
-        if(!i_key_2)
-          key_2_up = 1;
-        if (i_key_1 && key_1_up)
+        begin
+          player_fast_t = 0;
+          state_t = S_PLAY;
+          key_0_up_t = 1;
+        end
+        if (!i_key_2)
+        begin
+          player_slow_t = 0;
+          state_t = S_PLAY;
+          key_2_up_t = 1;
+        end
+        if (i_key_1 && key_1_up_r)
         begin //player pause
           state_t = S_PLAY_PAUSE;
           player_start_t = 0;
           player_pause_t = 1;
-          key_1_up = 0;
+          key_1_up_t = 0;
+          player_en_t = 0;
         end
-        else if (i_key_0 && key_0_up)
+        else if (i_key_0 && key_0_up_r)
         begin //player faster
           state_t = S_PLAY;
           player_fast_t = 1;
-          key_0_up = 0;
+          key_0_up_t = 0;
 
         end
-        else if (i_key_2 && key_2_up)
+        else if (i_key_2 && key_2_up_r)
         begin //player slower
           state_t = S_PLAY;
           player_slow_t = 1;
-          key_2_up = 0;
+          key_2_up_t = 0;
         end
-        else
+
+        if (address_end)
         begin
-          state_t = state_r;
+          player_en_t = 0;
+          state_t = S_READY;
+        end
+
+      end
+      S_PLAY_FAST:
+      begin
+        if(!i_key_0)
+        begin
           player_fast_t = 0;
-          player_slow_t = 0;
-          player_start_t = 1;
-          player_pause_t = 0;
+          state_t = S_PLAY;
+          key_0_up_t = 1;
         end
       end
-
+      S_PLAY_SLOW:
+      begin
+        if (!i_key_2)
+        begin
+          player_slow_t = 0;
+          state_t = S_PLAY;
+          key_2_up_t = 1;
+        end
+      end
       S_PLAY_PAUSE:
       begin
         if(!i_key_1)
-          key_1_up = 1;
+        begin
+          key_1_up_t = 1;
+          player_pause_t = 0;
+          player_en_t = 0;
+        end
         if(!i_key_2)
-          key_2_up = 1;
+          key_2_up_t = 1;
 
-        if (i_key_1 && key_1_up)
+        if (i_key_1 && key_1_up_r)
         begin //player start again
           state_t = S_PLAY;
           player_start_t = 1;
           player_pause_t = 0;
           player_stop_t = 0;
-          key_1_up = 0;
+          key_1_up_t = 0;
+          player_en_t = 1;
         end
-        else if (i_key_2 && key_2_up)
+        else if (i_key_2 && key_2_up_r)
         begin //player stop
           state_t = S_READY;
           player_start_t = 0;
@@ -317,29 +381,12 @@ module Top (
       player_fast_r <= 0;
       player_slow_r <= 0;
       player_slow1_r <= 0;
+      player_en_r <= 0;
+      key_0_up_r <= 1;
+      key_1_up_r <= 1;
+      key_2_up_r <= 1;
+      // address_end_r <=0;
     end
-    // else if(i_key_0 == 1)
-    // begin
-    // 	if(state_r == S_READY)
-    // 	begin
-    // 		state_r <= S_RECORD;
-    // 		recorder_start_r <= 1;
-    // 		recorder_stop_r <= 0;
-    // 	end
-    // 	else if (state_r == S_RECORD)
-    // 	begin
-    // 		state_r <= S_READY;
-    // 		recorder_start_r <= 0;
-    // 		recorder_stop_r <= 1;
-    // 	end
-    // 	recorder_pause_r <= recorder_pause_t;
-    // 	player_start_r <= player_start_t;
-    // 	player_pause_r <= player_pause_t;
-    // 	player_stop_r <= player_stop_t;
-    // 	player_fast_r <= player_fast_t;
-    // 	player_slow_r <= player_slow_t;
-    // 	player_slow1_r <= player_slow1_t;
-    // end
     else
     begin
       state_r <= state_t;
@@ -352,6 +399,12 @@ module Top (
       player_fast_r <= player_fast_t;
       player_slow_r <= player_slow_t;
       player_slow1_r <= player_slow1_t;
+      player_en_r <= player_en_t;
+      key_0_up_r <= key_0_up_t;
+      key_1_up_r <= key_1_up_t;
+      key_2_up_r <= key_2_up_t;
+      // address_end_r <= address_end_t;
+
     end
   end
 
