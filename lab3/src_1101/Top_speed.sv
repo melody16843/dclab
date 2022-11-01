@@ -82,8 +82,10 @@ module Top_speed (
   logic [3:0] state_play;
   // assign state = player_en;
   // assign state = state_i2c;
-  assign o_record_time = (state_r == S_RECORD) ? addr_record[19:14] : 6'd0;
-  assign o_play_time = (state_r == S_PLAY) ? addr_play[19:14] : 6'd0;
+ // assign o_record_time = (state_r == S_RECORD) ? addr_record[19:14] : 6'd0;
+ // assign o_play_time = (state_r == S_PLAY) ? addr_play[19:14] : 6'd0;
+    assign o_record_time = (state_r == S_RECORD) ? addr_record[19:15] : 6'd0;
+    assign o_play_time = (state_r == S_PLAY) ? addr_play[19:15] : 6'd0;
   
   assign io_I2C_SDAT = (i2c_oen) ? i2c_sdat : 1'bz;
 
