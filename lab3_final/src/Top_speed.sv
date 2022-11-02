@@ -85,7 +85,8 @@ module Top_speed (
  // assign o_record_time = (state_r == S_RECORD) ? addr_record[19:14] : 6'd0;
  // assign o_play_time = (state_r == S_PLAY) ? addr_play[19:14] : 6'd0;
     assign o_record_time = (state_r == S_RECORD) ? addr_record[19:15] : 6'd0;
-    assign o_play_time = (state_r == S_PLAY) ? addr_play[19:15] : 6'd0;
+    assign o_play_time = (state_r == S_PLAY || state_r == S_PLAY_PAUSE) ? addr_play[19:15] : 6'd0;
+    // assign o_play_time = player_en;
   
   assign io_I2C_SDAT = (i2c_oen) ? i2c_sdat : 1'bz;
 
@@ -226,7 +227,7 @@ module Top_speed (
     key_0_up_t = key_0_up_r;
     key_1_up_t = key_1_up_r;
     key_2_up_t = key_2_up_r;
-    // address_end_t = address_end_r;
+    address_end_t = address_end;
 
 
     //FSM
@@ -279,18 +280,6 @@ module Top_speed (
           key_1_up_t = 1;
           player_start_t = 0;
         end
-        if(!i_key_0)
-        begin
-          player_fast_t = 0;
-          state_t = S_PLAY;
-          key_0_up_t = 1;
-        end
-        if (!i_key_2)
-        begin
-          player_slow_t = 0;
-          state_t = S_PLAY;
-          key_2_up_t = 1;
-        end
         if (i_key_1 && key_1_up_r)
         begin //player pause
           state_t = S_PLAY_PAUSE;
@@ -299,44 +288,17 @@ module Top_speed (
           key_1_up_t = 0;
           player_en_t = 0;
         end
-        // else if (i_key_0 && key_0_up_r)
-        // begin //player faster
-        //   state_t = S_PLAY;
-        //   player_fast_t = 1;
-        //   key_0_up_t = 0;
 
-        // end
-        // else if (i_key_2 && key_2_up_r)
-        // begin //player slower
-        //   state_t = S_PLAY;
-        //   player_slow_t = 1;
-        //   key_2_up_t = 0;
-        // end
-
-        if (address_end)
+        if (address_end_r)
         begin
           player_en_t = 0;
           state_t = S_READY;
         end
+        // else begin
+        //   player_en_t = player_en_r;
+        //   state_t = state_r;
+        // end
 
-      end
-      S_PLAY_FAST:
-      begin
-        if(!i_key_0)
-        begin
-          player_fast_t = 0;
-          state_t = S_PLAY;
-          key_0_up_t = 1;
-        end
-      end
-      S_PLAY_SLOW:
-      begin
-        if (!i_key_2)
-        begin
-          player_slow_t = 0;
-          state_t = S_PLAY;
-          key_2_up_t = 1;
-        end
       end
       S_PLAY_PAUSE:
       begin
@@ -388,7 +350,7 @@ module Top_speed (
       key_0_up_r <= 1;
       key_1_up_r <= 1;
       key_2_up_r <= 1;
-      // address_end_r <=0;
+      address_end_r <=1;
     end
     else
     begin
@@ -406,7 +368,7 @@ module Top_speed (
       key_0_up_r <= key_0_up_t;
       key_1_up_r <= key_1_up_t;
       key_2_up_r <= key_2_up_t;
-      // address_end_r <= address_end_t;
+      address_end_r <= address_end_t;
 
     end
   end
