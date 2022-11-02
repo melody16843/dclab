@@ -82,12 +82,12 @@ module AudDSP_0(
     case(state_r)
       S_IDLE:
       begin
+        final_w = 0;
         if(i_start)
         begin
           sram_addr_w = 0;
           count_w = 0;
           pre_w = 0;
-          final_w = 0;
         end
       end
 
@@ -186,7 +186,7 @@ module AudDSP_0(
       sram_addr_r <= 0 ;
       count_r <= 0 ;
       pre_daclrck <= i_daclrck ;
-      final_r <=1;
+      final_r <=0;
     end
     else
     begin
