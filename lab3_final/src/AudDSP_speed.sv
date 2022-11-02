@@ -71,7 +71,7 @@ module AudDSP_0(
       else if(i_slow_1)
         state_w = S_SLOW1;
       else
-        state_w = S_FAST;
+        state_w = state_r;
     end
     else if(i_pause)
     begin
@@ -88,6 +88,14 @@ module AudDSP_0(
           sram_addr_w = 0;
           count_w = 0;
           pre_w = 0;
+          if(i_fast)
+             state_w = S_FAST;
+         else if(i_slow_0)
+             state_w = S_SLOW0;
+         else if(i_slow_1)
+              state_w = S_SLOW1;
+         else
+              state_w = state_r;
         end
       end
 
@@ -115,12 +123,7 @@ module AudDSP_0(
         begin
           sram_addr_w = i_final_address;
         end
-        /*
-        if(sram_addr_w >= i_final_address)
-        begin
-          state_w = S_IDLE;
-        end
-        */
+        
       end
 
       S_SLOW0 :
@@ -136,12 +139,7 @@ module AudDSP_0(
         begin
           count_w = count_w + 1;
         end
-        /*
-        if(sram_addr_w >= i_final_address)
-        begin
-          state_w = S_IDLE;
-        end
-        */
+        
       end
 
       S_SLOW1 :
@@ -158,12 +156,7 @@ module AudDSP_0(
         begin
           count_w = count_w + 1;
         end
-        /*
-        if(sram_addr_w >= i_final_address)
-        begin
-          state_w = S_IDLE;
-        end
-        */
+ 
       end
 
       S_PAUSE :
