@@ -68,9 +68,13 @@ module PPCheck #(
 reg should_keep;
 reg [BW:0] prev;
 always @(posedge clk or negedge rst_n) begin
+	$display(prev);
+	$display(rdy_and_dat);
 	if(!rst_n) begin
 		should_keep <= 0;
 	end else begin
+		$display(prev);
+		$display(rdy_and_dat);
 		if (should_keep && (prev !== rdy_and_dat || ^prev === 1'bx)) begin
 			$display("Protocol not met %m");
 			$display("+====================+");
