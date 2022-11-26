@@ -51,6 +51,7 @@ logic sw_finished;
 logic [`DP_SW_SCORE_BITWIDTH-1:0] alignment_score_w, alignment_score_r, alignment_score;
 logic [$clog2(`REF_MAX_LENGTH)-1:0] column_w, column_r, column;
 logic [$clog2(`READ_MAX_LENGTH)-1:0] row_w, row_r, row;
+logic   [255:0]     write_data_r, write_data_w;
 
 logic [2:0] state_get_w, state_get_r;
 logic [2:0] state_send_w, state_send_r;
@@ -61,7 +62,7 @@ localparam GET_SEQUENCE_READ = 3'd1;
 localparam GET_SEQ_REF_LENGTH = 3'd2;
 localparam GET_SEQ_READ_LENGTH = 3'd3;
 
-localparam SEND_NULL = 3'd0
+localparam SEND_NULL = 3'd0;
 localparam SEND_ALIGNMENT_SCORE = 3'd1;
 localparam SEND_COLUMN = 3'd2;
 localparam SEND_ROW = 3'd3;
@@ -69,6 +70,7 @@ localparam SEND_ROW = 3'd3;
 assign avm_address = avm_address_r;
 assign avm_read = avm_read_r;
 assign avm_write = avm_write_r;
+assign avm_writedata = write_data_r[247-:8];
 
 // Remember to complete the port connection
 SW_core sw_core(
@@ -79,8 +81,8 @@ SW_core sw_core(
     .i_valid			(sw_start_w),
     .i_sequence_ref		(sequence_ref_r),
     .i_sequence_read	(sequence_read_r),
-    .i_seq_ref_length	(REF_LENGTH ),
-    .i_seq_read_length	(READ_LENGTH),
+    .i_seq_ref_length	(REF_MAX_LENGTH),
+    .i_seq_read_length	(READ_MAX_LENGTH),
     
     .i_ready			(sw_start_w),
     .o_valid			(output_valid),
@@ -120,6 +122,7 @@ always_comb begin
     avm_read_w = avm_read_r;
     avm_write_w = avm_write_r;
     sw_start_w = sw_start_r;
+    write_data_w = write_data_r;
 
     //FSM
     case(state_r)
@@ -132,13 +135,13 @@ always_comb begin
             end
             else begin
                 StartRead(STATUS_BASE);
-                state_w = S_GET_KEY;
+                state_w = S_GET_WAIT;
             end
 
         end
         else begin
             StartRead(STATUS_BASE);
-            state_w = S_GET_KEY;
+            state_w = S_GET_WAIT;
 
         end
     end
@@ -150,6 +153,7 @@ always_comb begin
         GET_SEQUENCE_REF:begin
             if (!avm_waitrequest) begin
                 if(avm_address_r == RX_BASE & bytes_counter_r<7'd31)begin
+                    // $display("GET SEQUENCE REF!");
                     sequence_ref_w = sequence_ref_w << 8;
                     sequence_ref_w[7:0] = avm_readdata[7:0];
                     state_get_w = state_get_r;
@@ -191,6 +195,7 @@ always_comb begin
                 end
             end
         end
+
         // GET_SEQ_REF_LENGTH:begin
         //     if (!avm_waitrequest) begin
         //         if(bytes_counter_r<$clog2(`REF_MAX_LENGTH))begin
@@ -235,12 +240,15 @@ always_comb begin
         //         end
         //     end
         // end
+        
         endcase
     end
     S_WAIT_CALCULATE:begin
         //do calculate
         sw_start_w = 1'd1;
+        // $display("CALCULATING...");
         if(output_ready && output_valid)begin
+            $display("CALCULATION FINISH!");
             sw_start_w = 1'd0;
             state_w = S_SEND_WAIT;
             alignment_score_w = alignment_score;
@@ -252,7 +260,7 @@ always_comb begin
         //detect whether tx is ready(avm_waitrequest == 0 && amv_readdata[6] = 1)
         if (!avm_waitrequest) begin
             if(avm_address_r == STATUS_BASE & avm_readdata[TX_OK_BIT] == 1'b1) begin
-                // $display("dec");
+                $display("dec");
                 StartWrite(TX_BASE);
                 state_w = S_SEND_DATA;
             end
@@ -274,14 +282,19 @@ always_comb begin
         SEND_NULL: begin
             if (!avm_waitrequest) begin
                 if(avm_address_r == TX_BASE & bytes_counter_r<7'd6)begin
-                    avm_writedata = 8'd0;
+                    $display("send null");
+                    write_data_w = write_data_w << 8;
+                    write_data_w[7:0] = 8'd0;
+                    
                     bytes_counter_w = bytes_counter_r +7'd1;
                     state_w = S_SEND_WAIT;
                     state_send_w = state_send_r;
                     StartRead(STATUS_BASE);
                 end
-                else if (avm_address_r == TX_BASE & bytes_counter_r == 7'd7) begin
-                    avm_writedata = 8'd0;
+                else if (avm_address_r == TX_BASE & bytes_counter_r == 7'd6) begin
+                    
+                    write_data_w = write_data_w << 8;
+                    write_data_w[7:0] = 8'd0;
                     bytes_counter_w = 7'd0;
                     state_w = S_SEND_WAIT;
                     state_send_w = SEND_COLUMN;
@@ -289,39 +302,22 @@ always_comb begin
                 end
             end
         end
-        SEND_ALIGNMENT_SCORE: begin
-            if (!avm_waitrequest) begin
-                if(avm_address_r == TX_BASE & bytes_counter_r<7'd7)begin
-                    avm_writedata = alignment_score_r[247:-8];
-                    alignment_score_w = alignment_score_r << 8;
-                    bytes_counter_w = bytes_counter_r +7'd1;
-                    state_w = S_SEND_WAIT;
-                    state_send_w = state_send_r;
-                    StartRead(STATUS_BASE);
-                end
-                else if (avm_address_r == TX_BASE & bytes_counter_r == 7'd7) begin
-                    avm_writedata = alignment_score_r[247:-8];
-                    alignment_score_w = alignment_score_r << 8;
-                    bytes_counter_w = 7'd0;
-                    state_w = S_SEND_WAIT;
-                    state_send_w = SEND_COLUMN;
-                    StartRead(STATUS_BASE);
-                end
-            end
-        end
+
         SEND_COLUMN: begin
             if (!avm_waitrequest) begin
                 if(avm_address_r == TX_BASE & bytes_counter_r<7'd7)begin
-                    avm_writedata = column_r [247:-8];
-                    column_w = column_r << 8;
+                    write_data_w = write_data_w << 8;
+                    write_data_w[7:0] = 8'd0;
+                    
                     bytes_counter_w = bytes_counter_r +7'd1;
                     state_w = S_SEND_WAIT;
                     state_send_w = state_send_r;
                     StartRead(STATUS_BASE);
                 end
                 else if (avm_address_r == TX_BASE & bytes_counter_r == 7'd7) begin
-                    avm_writedata = column_r [247:-8];
-                    column_w = column_r << 8;
+                    
+                    write_data_w = write_data_w << 8;
+                    write_data_w[7:0] = {1'b0, column_r[6:0]};
                     bytes_counter_w = 7'd0;
                     state_w = S_SEND_WAIT;
                     state_send_w = SEND_ROW;
@@ -332,22 +328,53 @@ always_comb begin
         SEND_ROW: begin
             if (!avm_waitrequest) begin
                 if(avm_address_r == TX_BASE & bytes_counter_r < 7'd7)begin
-                    avm_writedata = row_r[247:-8];
-                    row_w = row_r << 8;
+                    
+                    write_data_w = write_data_w << 8;
+                    write_data_w[7:0] = 8'd0;
                     bytes_counter_w = bytes_counter_r +7'd1;
                     state_w = S_SEND_WAIT;
                     state_send_w = state_send_r;
                     StartRead(STATUS_BASE);
                 end
                 else if (avm_address_r == TX_BASE & bytes_counter_r == 7'd7) begin
-                    avm_writedata = row_r[247:-8];
-                    row_w = row_r << 8;
-                    row_w = row_r << 8;
+                    
+                    write_data_w = write_data_w << 8;
+                    write_data_w[7:0] = {1'b0, row_r[6:0]};
                     bytes_counter_w = 7'd0;
                     state_w = S_GET_WAIT; 
-                    state_send_w = SEND_NULL; 
+                    state_send_w = SEND_ALIGNMENT_SCORE; 
                     StartRead(STATUS_BASE);
                 end
+            end
+        end
+        SEND_ALIGNMENT_SCORE: begin
+            if (!avm_waitrequest) begin
+                if(avm_address_r == TX_BASE & bytes_counter_r<7'd6)begin
+                    write_data_w = write_data_w << 8;
+                    write_data_w[7:0] = 8'd0;
+                    bytes_counter_w = bytes_counter_r +7'd1;
+                    state_w = S_SEND_WAIT;
+                    state_send_w = state_send_r;
+                    StartRead(STATUS_BASE);
+                end
+                else if (avm_address_r == TX_BASE & bytes_counter_r == 7'd6) begin
+                    write_data_w = write_data_w << 8;
+                    write_data_w[7:0] = {6'd0, alignment_score_r[9:8]};
+                    bytes_counter_w = bytes_counter_r +7'd1;
+                    state_w = S_SEND_WAIT;
+                    state_send_w = SEND_COLUMN;
+                    StartRead(STATUS_BASE);
+                end
+                else if (avm_address_r == TX_BASE & bytes_counter_r == 7'd7) begin
+                    write_data_w = write_data_w << 8;
+                    write_data_w[7:0] = alignment_score_r[7:0];
+                    bytes_counter_w = 7'd0;
+                    state_w = S_SEND_WAIT;
+                    state_send_w = SEND_NULL;
+                    StartRead(STATUS_BASE);
+                end
+
+
             end
         end
         endcase
@@ -372,6 +399,7 @@ always_ff @(posedge avm_clk or posedge avm_rst) begin
         alignment_score_r <= 0;
         column_r <= 0;
         row_r <= 0;
+        write_data_r <= 0;
 
         state_r <= S_GET_WAIT;
         state_get_r <= GET_SEQUENCE_REF;
@@ -391,7 +419,7 @@ always_ff @(posedge avm_clk or posedge avm_rst) begin
         alignment_score_r <= alignment_score_w;
         column_r <= column_w;
         row_r <= row_w;
-
+        write_data_r <= write_data_w;
         state_r <= state_w;
         state_get_r <= state_get_w;
         state_send_r <= state_send_w;
