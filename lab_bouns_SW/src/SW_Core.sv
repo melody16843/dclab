@@ -463,9 +463,20 @@ module DP_PE_single(
   always_comb
   begin
     //default
-    // align_score_w = align_score_r;
-    // insert_score_w = insert_score_r;
-    // delete_score_w = delete_score_r;
+    align_score_w = align_score_r;
+    insert_score_w = insert_score_r;
+    delete_score_w = delete_score_r;
+	 i1 = 0;
+	 i2 =0;
+	 d1=0;
+	 d2=0;
+	 s1=0;
+	 h1=0;
+	 h2=0;
+	 h3=0;
+	 i_ij=0;
+	 d_ij=0;
+	 
 
     if (!(i_A_base_valid && i_B_base_valid))
     begin
@@ -543,11 +554,18 @@ module DP_PE_single(
     begin
       o_last_A_base_valid <= 0;
       o_last_A_base       <= 0;
+		align_score_r <= 0;
+    insert_score_r <= 0;
+    delete_score_r <= 0;
+		
     end
     else
     begin
       o_last_A_base_valid <= i_A_base_valid;
       o_last_A_base       <= i_A_base;
+		align_score_r <= align_score_w;
+    insert_score_r <= insert_score_w;
+    delete_score_r <= delete_score_w;
     end
   end
 
