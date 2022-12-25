@@ -130,7 +130,7 @@ wire	[12:0]		v_mask;
 
 
 // blur register
-parameter BW = 10250;
+parameter BW = 8000;
 // reg 	[9:0]		iRed_p1, iRed_p2, iRed_r, iGreen_p1, iGreen_p2, iGreen_r, iBlue_p1, iBlue_p2, iBlue_r;
 reg 	[9:0]		iRed_blur, iRed_blur_w, iGreen_blur, iGreen_blur_w, iBlue_blur, iBlue_blur_w, iGrey_blur, iGrey_blur_w, iGrey;
 // reg 	[BW-1:0]	R_row, R_row_w, G_row, G_row_w, B_row, B_row_w;
@@ -139,7 +139,7 @@ reg 	[9:0]		iRed_blur, iRed_blur_w, iGreen_blur, iGreen_blur_w, iBlue_blur, iBlu
 
 // pixelization
 reg 	[$clog2(BW):0] 	countx_r, countx_w;
-reg  				county_r, county_w;
+reg  	[$clog2(V_SYNC_TOTAL):0]       county_r, county_w;
 reg 	[BW-1:0]	R_row_pix, R_row_pix_w, G_row_pix, G_row_pix_w, B_row_pix, B_row_pix_w;
 reg 	[9:0]		pix_R, pix_R_w, pix_G, pix_G_w, pix_B, pix_B_w;
 
@@ -180,7 +180,7 @@ assign	mVGA_SYNC	=	1'b0;
 // 						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? pix_B : iBlue)	:	0;
 
 
-// pixelization
+// // pixelization
 assign	mVGA_R	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
 						?	pix_R_w 	:	0;
@@ -225,10 +225,14 @@ begin
 	G_row_pix_w = G_row_pix;
 	B_row_pix_w = B_row_pix;
 
-
+	county_w =  V_Cont - Y_START - v_mask;
+	countx_w = H_Cont - X_START;
 	// if(countx_r > X_START - 2)
 	// begin
-		if (county_r > 0)
+	if(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+		V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT ) 
+		begin
+		if (county_w[4:0] != 5'b0)
 		begin
 			// y at 1, 2, 3 row
 			pix_R_w = R_row_pix[BW-1:BW-10];
@@ -241,7 +245,7 @@ begin
 		else
 		begin
 			// y at first row (collect data)
-			if (countx_r[4:0] == 5'b0)
+			if (countx_w[4:0] == 5'b0)
 			begin
 				// y at first row and x at collection position
 				R_row_pix_w = {R_row_pix[BW-11:0], iRed};
@@ -262,14 +266,14 @@ begin
 				pix_B_w = B_row_pix[9:0];
 			end
 		end
-	// end
+	end
 
 
 
-	if (countx_r == 1056 )
+	if (countx_r == 1055 )
 	begin
 		countx_w = 0;
-		if (county_r > 31)
+		if (county_r == 628)
 		begin
 			// next four row (pixel row)
 			county_w = 0;
