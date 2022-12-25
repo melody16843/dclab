@@ -217,7 +217,7 @@ begin
   count_x_w = count_x;
   count_y_w = count_y;
 
-  if(count_x == BW)
+  if(count_x == 1050)  //if(count_x == (BW/10))
   begin
     count_x_w = 0;
     count_y_w = count_y + 1;
