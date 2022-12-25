@@ -128,6 +128,17 @@ reg		[12:0]		V_Cont;
 
 wire	[12:0]		v_mask;
 
+
+// blur register
+parameter BW = 10500;
+// reg 	[9:0]		iRed_p1, iRed_p2, iRed_r, iGreen_p1, iGreen_p2, iGreen_r, iBlue_p1, iBlue_p2, iBlue_r;
+reg 	[9:0]		iRed_blur, iRed_blur_w, iGreen_blur, iGreen_blur_w, iBlue_blur, iBlue_blur_w, iGrey_blur, iGrey_blur_w, iGrey;
+reg 	[BW-1:0]	R_row, R_row_w, G_row, G_row_w, B_row, B_row_w;
+reg 	[BW-1:0]	GR_row1, GR_row1_w, GR_row2, GR_row2_w, GR_row3, GR_row3_w;
+reg 	[$clog2(BW):0] 	count_x;
+reg  				count_y;
+
+
 assign v_mask = 13'd0 ;//iZOOM_MODE_SW ? 13'd0 : 13'd26;
 
 ////////////////////////////////////////////////////////
@@ -143,25 +154,94 @@ assign  	V_minus = iGreen - iBlue;
 assign	mVGA_BLANK	=	mVGA_H_SYNC & mVGA_V_SYNC;
 assign	mVGA_SYNC	=	1'b0;
 
-assign	mVGA_R	=	(U > 10'd100 && U < 10'd500 && iRed > iBlue) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-																			V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-																			?	iRed	:	0) : 0;
-assign	mVGA_G	=	(U > 10'd100 && U < 10'd500 && iRed > iBlue) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-																			V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-																			?	iGreen	:	0) : 0;
-assign	mVGA_B	=	(U > 10'd100 && U < 10'd500 && iRed > iBlue) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-																			V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-																			?	iBlue	:	0) : 0;
+// assign	mVGA_R	=	(U > 10'd200 && U < 10'd450 && iRed > iBlue) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+// 																			V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+// 																			?	iRed	:	0) : iRed_r;
+// assign	mVGA_G	=	(U > 10'd200 && U < 10'd450 && iRed > iBlue) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+// 																			V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+// 																			?	iGreen	:	0) : iGreen_r;
+// assign	mVGA_B	=	(U > 10'd200 && U < 10'd450 && iRed > iBlue) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+// 																			V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+// 																			?	iBlue	:	0) : iBlue_r;
 
-//assign	mVGA_R	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-//						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-//						?	iRed	:	0;
-//assign	mVGA_G	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-//						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-//						?	iGreen	:	0;
-//assign	mVGA_B	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-//						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-//						?	iBlue	:	0;
+assign	mVGA_R	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? iRed : iGrey_blur)	:	0;
+assign	mVGA_G	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? iGreen : iGrey_blur)	:	0;
+assign	mVGA_B	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? iBlue : iGrey_blur)	:	0;
+
+
+
+always @(*)
+begin
+	R_row_w = {R_row[BW-11:0], iRed};
+	G_row_w = {G_row[BW-11:0], iGreen};
+	B_row_w = {B_row[BW-11:0], iBlue};
+	iGrey = ((iRed/3) + (iGreen/3) + (iBlue/3));
+	GR_row1_w = {GR_row1[BW-11:0], iGrey};
+	GR_row2_w = {GR_row2[BW-11:0], GR_row1[BW-1:BW-10]};
+	GR_row3_w = {GR_row3[BW-11:0], GR_row2[BW-1:BW-10]};
+
+	iRed_blur_w = ((iRed>>3) + ((R_row[9:0])>>3) + ((R_row[19:10])>>3) + (R_row[29:20]>>3) 
+					+ (R_row[39:30]>>3) + ((R_row[BW-1:BW-10])>>3) + (R_row[BW-11:BW-20]>>3) + (R_row[BW-21:BW-30]>>3));
+	iGreen_blur_w = ((iGreen>>3) + ((G_row[9:0])>>3) + ((G_row[19:10])>>3) + (G_row[29:20]>>3) 
+					+ (G_row[39:30]>>3) + ((G_row[BW-1:BW-10])>>3) + (G_row[BW-11:BW-20]>>3) + (G_row[BW-21:BW-30]>>3));
+	iBlue_blur_w = ((iBlue>>3) + ((B_row[9:0])>>3) + ((B_row[19:10])>>3) + (B_row[29:20]>>3) 
+					+ (B_row[39:30]>>3) + ((B_row[BW-1:BW-10])>>3) + (B_row[BW-11:BW-20]>>3) + (B_row[BW-21:BW-30]>>3));
+	iGrey_blur_w = ((iGrey>>4) + (GR_row1[9:0]>>4) + ((GR_row1[19:10])>>4) + (GR_row1[29:20]>>4) 
+					+ (GR_row1[BW-11:BW-20]>>4) + ((GR_row1[BW-1:BW-10])>>4) + (GR_row2[9:0]>>4) + (GR_row2[19:10]>>4)
+					+ (GR_row2[BW-21:BW-30]>>4) + (GR_row2[BW-11:BW-20]>>4) + ((GR_row2[BW-1:BW-10])>>4) + (GR_row3[9:0]>>4)
+					+ (GR_row3[BW-31:BW-40]>>4) + (GR_row3[BW-21:BW-30]>>4) + (GR_row3[BW-11:BW-20]>>4) + ((GR_row3[BW-1:BW-10])>>4));
+end
+
+
+
+
+
+
+always@(posedge iCLK or negedge iRST_N)
+begin
+	if (!iRST_N)
+	begin
+		R_row <= ~0;
+		G_row <= ~0;
+		B_row <= ~0;
+		iRed_blur <= 0;
+		iGreen_blur <= 0;
+		iBlue_blur <= 0;
+		iGrey_blur <= 0;
+		GR_row1 <= ~0;
+		GR_row2 <= ~0;
+		GR_row3 <= ~0;
+	end
+	else
+	begin
+		// if(count_x < 10500)
+		// begin
+
+		// end
+		// else
+		// begin
+			
+		// end
+		R_row <= R_row_w;
+		G_row <= G_row_w;
+		B_row <= B_row_w;
+		GR_row1 <= GR_row1_w;
+		GR_row2 <= GR_row2_w;
+		GR_row3 <= GR_row3_w;
+		iRed_blur <= iRed_blur_w;
+		iBlue_blur <= iBlue_blur_w;
+		iGreen_blur <= iGreen_blur_w;
+		iGrey_blur <= iGrey_blur_w;
+	
+	end
+
+end
 
 always@(posedge iCLK or negedge iRST_N)
 	begin
