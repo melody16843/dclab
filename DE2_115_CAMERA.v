@@ -664,7 +664,31 @@ VGA_Controller		u1	(	//	Host Side
 							//	Control Signal
 							.iCLK(VGA_CTRL_CLK),
 							.iRST_N(DLY_RST_2),
-							.iZOOM_MODE_SW(SW[16])
+							.iZOOM_MODE_SW(SW[16]),
+							.show_mode1(SW[3]),
+							.show_mode2(SW[4]),
+							.show_mode3(SW[5]),
+							.show_mode4(SW[6]),
+							.show_mode5(SW[7])
 						);
+
+// VGA_Controller_v2		u1_2	(	//	Host Side
+// 							.oRequest(Read),
+// 							.iRed(Read_DATA2[9:0]),
+// 							.iGreen({Read_DATA1[14:10],Read_DATA2[14:10]}),
+// 							.iBlue(Read_DATA1[9:0]),
+// 							//	VGA Side
+// 							.oVGA_R(oVGA_R),
+// 							.oVGA_G(oVGA_G),
+// 							.oVGA_B(oVGA_B),
+// 							.oVGA_H_SYNC(VGA_HS),
+// 							.oVGA_V_SYNC(VGA_VS),
+// 							.oVGA_SYNC(VGA_SYNC_N),
+// 							.oVGA_BLANK(VGA_BLANK_N),
+// 							//	Control Signal
+// 							.iCLK(VGA_CTRL_CLK),
+// 							.iRST_N(DLY_RST_2),
+// 							.iZOOM_MODE_SW(SW[16])
+// 						);
 
 endmodule
