@@ -143,6 +143,8 @@ reg  	[$clog2(V_SYNC_TOTAL):0]       county_r, county_w;
 reg 	[BW-1:0]	R_row_pix, R_row_pix_w, G_row_pix, G_row_pix_w, B_row_pix, B_row_pix_w;
 reg 	[9:0]		pix_R, pix_R_w, pix_G, pix_G_w, pix_B, pix_B_w;
 
+reg     [799:0]  	is_it_skin, is_it_skin_w;  //detect if this pixel is a skin
+
 
 assign v_mask = 13'd0 ;//iZOOM_MODE_SW ? 13'd0 : 13'd26;
 
@@ -171,25 +173,45 @@ assign	mVGA_SYNC	=	1'b0;
 
 // assign	mVGA_R	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
 // 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-// 						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? pix_R : iRed)	:	0;
+// 						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue ) ? pix_R_w : iRed)	:	0;
 // assign	mVGA_G	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
 // 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-// 						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? pix_G : iGreen)	:	0;
+// 						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? pix_G_w : iGreen)	:	0;
 // assign	mVGA_B	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
 // 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-// 						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? pix_B : iBlue)	:	0;
+// 						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? pix_B_w : iBlue)	:	0;
+assign	mVGA_R	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	(is_it_skin_w[0] ? pix_R_w : iRed)	:	0;
+assign	mVGA_G	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	(is_it_skin_w[0] ? pix_G_w : iGreen)	:	0;
+assign	mVGA_B	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	(is_it_skin_w[0] ? pix_B_w : iBlue)	:	0;
+
+
+// assign	mVGA_R	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+// 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+// 						?	((U > 10'd200 && U < 10'd450 &&  iRed>10'd380 && iBlue> 10'd80 && iGreen>10'd160 && iRed > iBlue && iRed > iGreen) ? pix_R_w : iRed)	:	0;
+// assign	mVGA_G	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+// 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+// 						?	((U > 10'd200 && U < 10'd450 &&  iRed>10'd380 && iBlue> 10'd80 && iGreen>10'd160 && iRed > iBlue && iRed > iGreen) ? pix_G_w : iGreen)	:	0;
+// assign	mVGA_B	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+// 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+// 						?	((U > 10'd200 && U < 10'd450 &&  iRed>10'd380 && iBlue> 10'd80 && iGreen>10'd160 && iRed > iBlue && iRed > iGreen) ? pix_B_w : iBlue)	:	0;
 
 
 // // pixelization
-assign	mVGA_R	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-						?	pix_R_w 	:	0;
-assign	mVGA_G	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-						?	pix_G_w	:	0;
-assign	mVGA_B	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-						?	pix_B_w	:	0;
+// assign	mVGA_R	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+// 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+// 						?	pix_R_w 	:	0;
+// assign	mVGA_G	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+// 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+// 						?	pix_G_w	:	0;
+// assign	mVGA_B	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+// 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+// 						?	pix_B_w	:	0;
 
 
 
@@ -224,7 +246,7 @@ begin
 	R_row_pix_w = R_row_pix;
 	G_row_pix_w = G_row_pix;
 	B_row_pix_w = B_row_pix;
-
+	is_it_skin_w = is_it_skin;
 	county_w =  V_Cont - Y_START - v_mask;
 	countx_w = H_Cont - X_START;
 	// if(countx_r > X_START - 2)
@@ -232,6 +254,21 @@ begin
 	if(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
 		V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT ) 
 		begin
+		if(U > 10'd200 && U < 10'd450 && iRed > iBlue) //this pixel is a skin pixel
+		begin
+			is_it_skin_w = {is_it_skin[798:0], 1'b1};
+		end
+		else
+		begin
+			if(is_it_skin[799] == 1'b1 && is_it_skin[0] == 1'b1)
+			begin
+				is_it_skin_w = {is_it_skin[798:0], 1'b1};
+			end
+			else
+			begin
+				is_it_skin_w = {is_it_skin[798:0], 1'b0};
+			end
+		end
 		if (county_w[4:0] != 5'b0)
 		begin
 			// y at 1, 2, 3 row
@@ -300,6 +337,7 @@ end
 
 
 
+
 always@(posedge iCLK or negedge iRST_N)
 begin
 	if (!iRST_N)
@@ -324,6 +362,7 @@ begin
 		R_row_pix <= ~0;
 		G_row_pix <= ~0;
 		B_row_pix <= ~0;
+		is_it_skin <= 0;
 	end
 	else
 	begin
@@ -347,6 +386,7 @@ begin
 		R_row_pix <= R_row_pix_w;
 		G_row_pix <= G_row_pix_w;
 		B_row_pix <= B_row_pix_w;
+		is_it_skin <= is_it_skin_w;
 
 	
 	end
