@@ -57,7 +57,12 @@ module	VGA_Controller(	//	Host Side
 						//	Control Signal
 						iCLK,
 						iRST_N,
-						iZOOM_MODE_SW
+						iZOOM_MODE_SW,
+						show_mode1,
+						show_mode2,
+						show_mode3,
+						show_mode4,
+						show_mode5
 							);
 `include "VGA_Param.h"
 
@@ -121,6 +126,7 @@ wire				mVGA_BLANK;
 input				iCLK;
 input				iRST_N;
 input 				iZOOM_MODE_SW;
+input				show_mode1, show_mode2, show_mode3, show_mode4, show_mode5;
 
 //	Internal Registers and Wires
 reg		[12:0]		H_Cont;
@@ -146,7 +152,8 @@ reg 	[9:0]		pix_R, pix_R_w, pix_G, pix_G_w, pix_B, pix_B_w;
 reg     [799:0]  	is_it_skin, is_it_skin_w;  //detect if this pixel is a skin
 
 
-assign v_mask = 13'd0 ;//iZOOM_MODE_SW ? 13'd0 : 13'd26;
+// assign v_mask = 13'd0 ;//iZOOM_MODE_SW ? 13'd0 : 13'd26;
+assign v_mask = iZOOM_MODE_SW ? 13'd0 : 13'd26;
 
 ////////////////////////////////////////////////////////
 
@@ -161,34 +168,69 @@ assign  	V_minus = iGreen - iBlue;
 assign	mVGA_BLANK	=	mVGA_H_SYNC & mVGA_V_SYNC;
 assign	mVGA_SYNC	=	1'b0;
 
-// assign	mVGA_R	=	(U > 10'd200 && U < 10'd450 && iRed > iBlue) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-// 																			V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-// 																			?	iRed	:	0) : iRed_r;
-// assign	mVGA_G	=	(U > 10'd200 && U < 10'd450 && iRed > iBlue) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-// 																			V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-// 																			?	iGreen	:	0) : iGreen_r;
-// assign	mVGA_B	=	(U > 10'd200 && U < 10'd450 && iRed > iBlue) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-// 																			V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-// 																			?	iBlue	:	0) : iBlue_r;
 
+//show mode
+assign	mVGA_R	=	(show_mode1 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	(is_it_skin_w[0] ? pix_R_w : iRed)	:	0) : (show_mode2 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	(is_it_skin_w[0] ? iRed : pix_R_w)	:	0) : (show_mode3 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	pix_R_w 	:	0) : (show_mode4 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? iRed : pix_R_w)	:	0) : (show_mode5 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? pix_R_w : iRed)	:	0) : ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	iRed	:	0);
+assign	mVGA_G	=	(show_mode1 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	(is_it_skin_w[0] ? pix_G_w : iGreen)	:	0) : (show_mode2 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	(is_it_skin_w[0] ? iGreen : pix_G_w)	:	0) : (show_mode3 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	pix_G_w 	:	0) : (show_mode4 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? iGreen : pix_G_w)	:	0) : (show_mode5 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? pix_G_w : iGreen)	:	0) : ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	iGreen	:	0);
+assign	mVGA_B	=	(show_mode1 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	(is_it_skin_w[0] ? pix_B_w : iBlue)	:	0) : (show_mode2 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	(is_it_skin_w[0] ? iBlue : pix_B_w)	:	0) : (show_mode3 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	pix_B_w 	:	0) : (show_mode4 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? iBlue : pix_B_w)	:	0) : (show_mode5 == 1) ? ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? pix_B_w : iBlue)	:	0) : ((	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+						?	iBlue	:	0);
+
+//show skin
 // assign	mVGA_R	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
 // 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-// 						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue ) ? pix_R_w : iRed)	:	0;
+// 						?	(is_it_skin_w[0] ? iRed : pix_R_w)	:	0;
 // assign	mVGA_G	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
 // 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-// 						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? pix_G_w : iGreen)	:	0;
+// 						?	(is_it_skin_w[0] ? iGreen : pix_G_w)	:	0;
 // assign	mVGA_B	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
 // 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-// 						?	((U > 10'd200 && U < 10'd450 && iRed > iBlue) ? pix_B_w : iBlue)	:	0;
-assign	mVGA_R	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-						?	(is_it_skin_w[0] ? pix_R_w : iRed)	:	0;
-assign	mVGA_G	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-						?	(is_it_skin_w[0] ? pix_G_w : iGreen)	:	0;
-assign	mVGA_B	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-						?	(is_it_skin_w[0] ? pix_B_w : iBlue)	:	0;
+// 						?	(is_it_skin_w[0] ? iBlue : pix_B_w)	:	0;
+// show background
+// assign	mVGA_R	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+// 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+// 						?	(is_it_skin_w[0] ? pix_R_w : iRed)	:	0;
+// assign	mVGA_G	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+// 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+// 						?	(is_it_skin_w[0] ? pix_G_w : iGreen)	:	0;
+// assign	mVGA_B	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
+// 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
+// 						?	(is_it_skin_w[0] ? pix_B_w : iBlue)	:	0;
+
 
 
 // assign	mVGA_R	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
@@ -213,7 +255,15 @@ assign	mVGA_B	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
 // 						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
 // 						?	pix_B_w	:	0;
 
-
+wire [7:0] i_S;
+rgb2hsv u1(
+	.i_R(iRed[9:2]),
+	.i_G(iGreen[9:2]),
+	.i_B(iBlue[9:2]),
+	.o_H(),
+	.o_S(i_S),
+	.o_V()
+);
 
 always @(*)
 begin
@@ -249,12 +299,13 @@ begin
 	is_it_skin_w = is_it_skin;
 	county_w =  V_Cont - Y_START - v_mask;
 	countx_w = H_Cont - X_START;
+
 	// if(countx_r > X_START - 2)
 	// begin
 	if(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
 		V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT ) 
 		begin
-		if(U > 10'd200 && U < 10'd450 && iRed > iBlue) //this pixel is a skin pixel
+		if(U > 10'd200 && U < 10'd450 && iRed > iGreen && iGreen > iBlue && iRed>10'd60 && iGreen>10'd60 && iBlue>10'd60  && i_S>8'd40 && i_S<8'd205) //this pixel is a skin pixel
 		begin
 			is_it_skin_w = {is_it_skin[798:0], 1'b1};
 		end
